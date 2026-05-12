@@ -48,7 +48,7 @@ fun WelcomeScreenCustom(
                 modifier = Modifier
                     .size(180.dp)
                     .clip(RoundedCornerShape(32.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Fit
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -68,7 +68,7 @@ fun WelcomeScreenCustom(
                     .fillMaxWidth()
                     .height(52.dp)
             ) {
-                Text("Iniciar Sessiò")
+                Text("Iniciar Sessió")
             }
 
             Spacer(modifier = Modifier.height(16.dp))

@@ -451,6 +451,17 @@ class ShotSessionViewModel(
     private fun findSession(num: Int?) =
         sessions.data?.firstOrNull { it.num_sessio == num }
 
+    private fun upsertSessionLocally(session: Sessio) {
+        val updated = sessions.data
+            .orEmpty()
+            .filterNot {
+                it.id_jugador == session.id_jugador &&
+                        it.num_sessio == session.num_sessio
+            } + session
+
+        sessions = UiState(data = updated.sortedBy { it.num_sessio })
+    }
+
     fun setZoneForCurrentSession(
         zone: Int,
         made: Int,
@@ -486,13 +497,17 @@ class ShotSessionViewModel(
         try {
             val session = draft ?: return@launch
 
-            if (editing == null) {
+            val savedSession = if (editing == null) {
                 repo.createSession(session)
             } else {
                 repo.updateSession(session)
+                session
             }
 
-            onDone(session.num_sessio)
+            upsertSessionLocally(savedSession)
+            draft = savedSession.copy()
+
+            onDone(savedSession.num_sessio)
         } catch (e: Exception) {
             error = e.message ?: "Error guardant la sessió"
         }

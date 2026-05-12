@@ -575,7 +575,6 @@ private fun SessionStatsTable(
                 .padding(12.dp)
                 .border(1.dp, borderColor)
         ) {
-            // Columna fija
             Column {
                 HeaderCell("Sessió", SessionStickyColumnWidth)
 
@@ -592,7 +591,6 @@ private fun SessionStatsTable(
                 )
             }
 
-            // Resto de columnas con scroll horizontal
             Box(
                 modifier = Modifier.horizontalScroll(scroll)
             ) {

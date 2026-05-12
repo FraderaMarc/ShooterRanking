@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -114,18 +116,22 @@ fun ShotMapScreen(
 
     val savedSessions = sessionsVm.sessions.data.orEmpty().sortedByDescending { it.num_sessio }
     val activeSession = sessionsVm.draft
-    val newSessionDisplayNumber = savedSessions.size + 1
+    val nextAvailableSessionNumber = (savedSessions.maxOfOrNull { it.num_sessio } ?: 0) + 1
+
+    val newSessionDisplayNumber = if (editingSessionNumber == null) {
+        activeSession?.num_sessio ?: nextAvailableSessionNumber
+    } else {
+        nextAvailableSessionNumber
+    }
 
     val persistCurrentSession = {
         sessionsVm.saveCurrentSession(
             idJugador = selectedJugadorId,
             editing = editingSessionNumber
         ) { savedSessionNumber ->
-            sessionsVm.load(selectedJugadorId)
-            sessionsVm.draft = sessionsVm.draft?.copy(num_sessio = savedSessionNumber)
-
             if (screenActive) {
                 editingSessionNumber = savedSessionNumber
+                sessionsExpanded = false
                 redrawKey++
             }
         }
@@ -276,12 +282,16 @@ fun ShotMapScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                OutlinedButton(
+                Button(
                     onClick = { persistCurrentSession() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    enabled = activeSession != null
+                    enabled = activeSession != null,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
                     Text("Guardar sessió")
                 }

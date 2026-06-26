@@ -44,6 +44,7 @@ class TemporadesLiveDataViewModel(
                 onError(e.message ?: "No s'ha pogut crear la temporada.")
             }
         }
+
     fun update(
         idTemporada: String,
         anyInici: Int,
@@ -106,26 +107,40 @@ class EquipsLiveDataViewModel(
     fun create(
         temporadaId: String,
         nomEquip: String,
+        tipusPista: String,
         onDone: () -> Unit,
         onError: (String) -> Unit
     ) = viewModelScope.launch {
         try {
-            repo.createEquip(nomEquip.trim(), temporadaId)
+            repo.createEquip(
+                nomEquip = nomEquip.trim(),
+                idTemporada = temporadaId,
+                tipusPista = tipusPista
+            )
             load(temporadaId)
             onDone()
         } catch (e: Exception) {
             onError(e.message ?: "No s'ha pogut crear l'equip.")
         }
     }
+
     fun update(
         idEquip: String,
         temporadaId: String,
         nomEquip: String,
+        tipusPista: String,
         onDone: () -> Unit,
         onError: (String) -> Unit
     ) = viewModelScope.launch {
         try {
-            repo.updateEquip(idEquip, nomEquip.trim())
+            val hasSessions = repo.equipHasSessions(idEquip)
+
+            repo.updateEquip(
+                idEquip = idEquip,
+                nomEquip = nomEquip.trim(),
+                tipusPista = if (hasSessions) null else tipusPista
+            )
+
             load(temporadaId)
             onDone()
         } catch (e: Exception) {

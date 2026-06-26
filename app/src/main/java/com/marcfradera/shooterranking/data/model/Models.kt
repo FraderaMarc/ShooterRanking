@@ -11,6 +11,7 @@ data class Equip(
     val id_equip: String = "",
     val nom_equip: String = "",
     val id_temporada: String = "",
+    val tipus_pista: String = "Base",
     val userId: String = ""
 )
 

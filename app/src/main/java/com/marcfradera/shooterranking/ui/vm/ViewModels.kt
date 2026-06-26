@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.marcfradera.shooterranking.data.FirebaseProvider
 import com.marcfradera.shooterranking.data.ShooterRepository
 import com.marcfradera.shooterranking.data.model.Equip
 import com.marcfradera.shooterranking.data.model.Jugador
@@ -13,6 +14,7 @@ import com.marcfradera.shooterranking.data.model.Sessio
 import com.marcfradera.shooterranking.data.model.Temporada
 import com.marcfradera.shooterranking.data.model.ZoneAgg
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 data class UiState<T>(
     val loading: Boolean = false,
@@ -225,9 +227,18 @@ class EquipsViewModel(
         }
     }
 
-    fun create(nom: String, idTemporada: String, onDone: () -> Unit) = viewModelScope.launch {
+    fun create(
+        nom: String,
+        idTemporada: String,
+        tipusPista: String = "Base",
+        onDone: () -> Unit
+    ) = viewModelScope.launch {
         try {
-            repo.createEquip(nom, idTemporada)
+            repo.createEquip(
+                nomEquip = nom,
+                idTemporada = idTemporada,
+                tipusPista = tipusPista
+            )
             load(idTemporada)
             onDone()
         } catch (e: Exception) {
@@ -235,9 +246,19 @@ class EquipsViewModel(
         }
     }
 
-    fun update(idEquip: String, nom: String, idTemporada: String, onDone: () -> Unit) = viewModelScope.launch {
+    fun update(
+        idEquip: String,
+        nom: String,
+        idTemporada: String,
+        tipusPista: String? = null,
+        onDone: () -> Unit
+    ) = viewModelScope.launch {
         try {
-            repo.updateEquip(idEquip, nom)
+            repo.updateEquip(
+                idEquip = idEquip,
+                nomEquip = nom,
+                tipusPista = tipusPista
+            )
             load(idTemporada)
             onDone()
         } catch (e: Exception) {
@@ -280,6 +301,7 @@ class JugadorsViewModel(
 
         try {
             val jugadors = repo.listJugadors(idEquip)
+            val tipusPista = loadTipusPistaByEquip(idEquip)
             state = UiState(data = jugadors)
 
             val ranked: List<JugadorRankingItem> = jugadors.map { jugador ->
@@ -287,14 +309,8 @@ class JugadorsViewModel(
 
                 val made = when (filter) {
                     "FREE_THROW" -> sessions.sumOf { it.fets_pos_6 }
-                    "THREE_PT" -> sessions.sumOf {
-                        it.fets_pos_1 + it.fets_pos_2 + it.fets_pos_3 +
-                                it.fets_pos_10 + it.fets_pos_11
-                    }
-                    "TWO_PT" -> sessions.sumOf {
-                        it.fets_pos_4 + it.fets_pos_5 +
-                                it.fets_pos_7 + it.fets_pos_8 + it.fets_pos_9
-                    }
+                    "THREE_PT" -> sessions.sumOf { it.rankingThreePointMade(tipusPista) }
+                    "TWO_PT" -> sessions.sumOf { it.rankingTwoPointMade(tipusPista) }
                     else -> sessions.sumOf {
                         it.fets_pos_1 + it.fets_pos_2 + it.fets_pos_3 + it.fets_pos_4 +
                                 it.fets_pos_5 + it.fets_pos_6 + it.fets_pos_7 + it.fets_pos_8 +
@@ -304,14 +320,8 @@ class JugadorsViewModel(
 
                 val attempted = when (filter) {
                     "FREE_THROW" -> sessions.sumOf { it.tirs_pos_6 }
-                    "THREE_PT" -> sessions.sumOf {
-                        it.tirs_pos_1 + it.tirs_pos_2 + it.tirs_pos_3 +
-                                it.tirs_pos_10 + it.tirs_pos_11
-                    }
-                    "TWO_PT" -> sessions.sumOf {
-                        it.tirs_pos_4 + it.tirs_pos_5 +
-                                it.tirs_pos_7 + it.tirs_pos_8 + it.tirs_pos_9
-                    }
+                    "THREE_PT" -> sessions.sumOf { it.rankingThreePointAttempted(tipusPista) }
+                    "TWO_PT" -> sessions.sumOf { it.rankingTwoPointAttempted(tipusPista) }
                     else -> sessions.sumOf {
                         it.tirs_pos_1 + it.tirs_pos_2 + it.tirs_pos_3 + it.tirs_pos_4 +
                                 it.tirs_pos_5 + it.tirs_pos_6 + it.tirs_pos_7 + it.tirs_pos_8 +
@@ -526,5 +536,64 @@ class ShotSessionViewModel(
         } catch (e: Exception) {
             error = e.message
         }
+    }
+}
+
+private suspend fun loadTipusPistaByEquip(idEquip: String): String {
+    return try {
+        FirebaseProvider.firestore
+            .collection("equips")
+            .document(idEquip)
+            .get()
+            .await()
+            .getString("tipus_pista")
+            ?.takeIf { it.isNotBlank() }
+            ?: "Amateur"
+    } catch (_: Exception) {
+        "Amateur"
+    }
+}
+
+private fun isBaseCourt(tipusPista: String): Boolean {
+    return tipusPista.equals("Base", ignoreCase = true)
+}
+
+private fun Sessio.rankingThreePointMade(tipusPista: String): Int {
+    return if (isBaseCourt(tipusPista)) {
+        fets_pos_1 + fets_pos_2 + fets_pos_3 +
+                fets_pos_4 + fets_pos_5 +
+                fets_pos_7 + fets_pos_9 +
+                fets_pos_10 + fets_pos_11
+    } else {
+        fets_pos_1 + fets_pos_2 + fets_pos_3 +
+                fets_pos_10 + fets_pos_11
+    }
+}
+
+private fun Sessio.rankingThreePointAttempted(tipusPista: String): Int {
+    return if (isBaseCourt(tipusPista)) {
+        tirs_pos_1 + tirs_pos_2 + tirs_pos_3 +
+                tirs_pos_4 + tirs_pos_5 +
+                tirs_pos_7 + tirs_pos_9 +
+                tirs_pos_10 + tirs_pos_11
+    } else {
+        tirs_pos_1 + tirs_pos_2 + tirs_pos_3 +
+                tirs_pos_10 + tirs_pos_11
+    }
+}
+
+private fun Sessio.rankingTwoPointMade(tipusPista: String): Int {
+    return if (isBaseCourt(tipusPista)) {
+        fets_pos_8
+    } else {
+        fets_pos_4 + fets_pos_5 + fets_pos_7 + fets_pos_8 + fets_pos_9
+    }
+}
+
+private fun Sessio.rankingTwoPointAttempted(tipusPista: String): Int {
+    return if (isBaseCourt(tipusPista)) {
+        tirs_pos_8
+    } else {
+        tirs_pos_4 + tirs_pos_5 + tirs_pos_7 + tirs_pos_8 + tirs_pos_9
     }
 }

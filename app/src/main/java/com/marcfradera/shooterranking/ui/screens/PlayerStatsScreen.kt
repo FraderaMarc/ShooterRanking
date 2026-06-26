@@ -53,12 +53,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.marcfradera.shooterranking.data.FirebaseProvider
 import com.marcfradera.shooterranking.data.model.Jugador
 import com.marcfradera.shooterranking.data.model.JugadorRankingItem
 import com.marcfradera.shooterranking.data.model.Sessio
 import com.marcfradera.shooterranking.ui.vm.JugadorSessionsExport
 import com.marcfradera.shooterranking.ui.vm.JugadorsViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.sqrt
@@ -190,6 +192,8 @@ fun JugadorsRankingScreen(
                     scope.launch {
                         try {
                             val players = vm.loadPlayersForExport(idEquip)
+                            val tipusPista = loadTipusPistaByEquip(idEquip)
+
                             if (players.isEmpty()) {
                                 Toast.makeText(
                                     context,
@@ -199,7 +203,8 @@ fun JugadorsRankingScreen(
                             } else {
                                 exportAllPlayersStatsPdfAndShare(
                                     context = context,
-                                    players = players
+                                    players = players,
+                                    tipusPista = tipusPista
                                 )
                             }
                         } catch (e: Exception) {
@@ -366,93 +371,122 @@ private fun PlayerRow(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = {},
-                onLongClick = { expanded = true }
-            )
-    ) {
-        Row(
+    Box {
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = { expanded = true }
+                )
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "$rank. ${item.jugador.nom_jugador}",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            text = "Dorsal ${formatDorsal(item.jugador.numero_jugador)} · ${positionLabel(item.jugador.posicio_jugador)}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "Sessions: ${item.sessions}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "$rank. ${item.jugador.nom_jugador}",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(Modifier.height(6.dp))
+
+                            Text(
+                                text = "Dorsal ${formatDorsal(item.jugador.numero_jugador)} · ${positionLabel(item.jugador.posicio_jugador)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Text(
+                                text = "Sessions: ${item.sessions}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = buildAnnotatedString {
+                                    append("${item.made}/${item.attempted} ")
+                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                        append(formatRankingPct(item.pct))
+                                    }
+                                },
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
                     }
 
-                    Box(
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = buildAnnotatedString {
-                                append("${item.made}/${item.attempted} ")
-                                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append(formatRankingPct(item.pct))
-                                }
-                            },
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
+                    Spacer(Modifier.height(10.dp))
 
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        TextButton(onClick = onStats) {
+                        OutlinedButton(
+                            onClick = onStats,
+                            modifier = Modifier.weight(1f)
+                        ) {
                             Text("Stats")
                         }
-                        TextButton(onClick = onShots) {
-                            Text("Tir")
+
+                        OutlinedButton(
+                            onClick = onShots,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Mapa")
                         }
                     }
                 }
-
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Editar") },
-                        onClick = {
-                            expanded = false
-                            onEdit()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Eliminar") },
-                        onClick = {
-                            expanded = false
-                            onDelete()
-                        }
-                    )
-                }
             }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Estadístiques") },
+                onClick = {
+                    expanded = false
+                    onStats()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Mapa de tir") },
+                onClick = {
+                    expanded = false
+                    onShots()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Editar") },
+                onClick = {
+                    expanded = false
+                    onEdit()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Eliminar") },
+                onClick = {
+                    expanded = false
+                    onDelete()
+                }
+            )
         }
     }
 }
@@ -478,7 +512,7 @@ private fun CreateJugadorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nou jugador") },
+        title = { Text("Afegir jugadora") },
         text = {
             Column {
                 OutlinedTextField(
@@ -711,30 +745,31 @@ private fun positionLabel(posicio: String): String {
 
 private fun exportAllPlayersStatsPdfAndShare(
     context: Context,
-    players: List<JugadorSessionsExport>
+    players: List<JugadorSessionsExport>,
+    tipusPista: String
 ) {
     if (players.isEmpty()) return
 
     val playerRows = players
-        .map { buildTeamExportRow(it) }
+        .map { buildTeamExportRow(it, tipusPista) }
         .sortedWith(
             compareByDescending<TeamExportRow> { it.totalPct ?: -1f }
                 .thenByDescending { it.totalMade }
                 .thenBy { it.jugador.nom_jugador.lowercase() }
         )
 
-    val totalRow = buildTeamTotalRow(players, playerRows)
+    val totalRow = buildTeamTotalRow(players, playerRows, tipusPista)
     val bestValues = buildTeamExportBestValues(playerRows)
     val teamSessions = buildTeamSessionAggregates(players)
 
     val tripleData = teamSessions.mapIndexed { index, s ->
-        TeamPdfProgressPoint(index, s.num_sessio.toString(), s.rankingThreePointPct())
+        TeamPdfProgressPoint(index, s.num_sessio.toString(), s.rankingThreePointPct(tipusPista))
     }
     val freeThrowData = teamSessions.mapIndexed { index, s ->
         TeamPdfProgressPoint(index, s.num_sessio.toString(), s.rankingFreeThrowPct())
     }
     val twoPointData = teamSessions.mapIndexed { index, s ->
-        TeamPdfProgressPoint(index, s.num_sessio.toString(), s.rankingTwoPointPct())
+        TeamPdfProgressPoint(index, s.num_sessio.toString(), s.rankingTwoPointPct(tipusPista))
     }
 
     val document = PdfDocument()
@@ -757,7 +792,8 @@ private fun exportAllPlayersStatsPdfAndShare(
             document = document,
             startPageNumber = nextPageNumber,
             nomJugador = player.jugador.nom_jugador,
-            sessions = player.sessions.sortedBy { it.num_sessio }
+            sessions = player.sessions.sortedBy { it.num_sessio },
+            tipusPista = tipusPista
         )
     }
 
@@ -782,48 +818,90 @@ private fun exportAllPlayersStatsPdfAndShare(
     context.startActivity(Intent.createChooser(intent, "Compartir PDF"))
 }
 
-private fun buildTeamExportBestValues(rows: List<TeamExportRow>): TeamExportBestValues {
-    return TeamExportBestValues(
-        sessions = rows.maxOfOrNull { it.sessions } ?: 0,
-        tlMade = rows.maxOfOrNull { it.tlMade } ?: 0,
-        tlPct = rows.mapNotNull { it.tlPct }.maxOrNull(),
-        t2Made = rows.maxOfOrNull { it.t2Made } ?: 0,
-        t2Pct = rows.mapNotNull { it.t2Pct }.maxOrNull(),
-        t3Made = rows.maxOfOrNull { it.t3Made } ?: 0,
-        t3Pct = rows.mapNotNull { it.t3Pct }.maxOrNull(),
-        totalMade = rows.maxOfOrNull { it.totalMade } ?: 0,
-        totalPct = rows.mapNotNull { it.totalPct }.maxOrNull(),
-        rightPct = rows.mapNotNull { it.rightPct }.maxOrNull(),
-        leftPct = rows.mapNotNull { it.leftPct }.maxOrNull()
+private fun buildTeamExportRow(
+    player: JugadorSessionsExport,
+    tipusPista: String
+): TeamExportRow {
+    val sessions = player.sessions.sortedBy { it.num_sessio }
+
+    val tlMade = sessions.sumOf { it.fets_pos_6 }
+    val tlAttempted = sessions.sumOf { it.tirs_pos_6 }
+
+    val t2Made = sessions.sumOf { it.rankingTwoPointMade(tipusPista) }
+    val t2Attempted = sessions.sumOf { it.rankingTwoPointAttempted(tipusPista) }
+
+    val t3Made = sessions.sumOf { it.rankingThreePointMade(tipusPista) }
+    val t3Attempted = sessions.sumOf { it.rankingThreePointAttempted(tipusPista) }
+
+    val totalMade = tlMade + t2Made + t3Made
+    val totalAttempted = tlAttempted + t2Attempted + t3Attempted
+
+    val rightMade = sessions.sumOf { it.fets_pos_1 + it.fets_pos_4 + it.fets_pos_7 + it.fets_pos_10 }
+    val rightAttempted = sessions.sumOf { it.tirs_pos_1 + it.tirs_pos_4 + it.tirs_pos_7 + it.tirs_pos_10 }
+
+    val leftMade = sessions.sumOf { it.fets_pos_3 + it.fets_pos_5 + it.fets_pos_9 + it.fets_pos_11 }
+    val leftAttempted = sessions.sumOf { it.tirs_pos_3 + it.tirs_pos_5 + it.tirs_pos_9 + it.tirs_pos_11 }
+
+    val merged = mergeSessionsRanking(sessions, player.jugador.id_jugador)
+
+    val rightPct = rankingPctOrNull(rightMade, rightAttempted)
+    val leftPct = rankingPctOrNull(leftMade, leftAttempted)
+
+    return TeamExportRow(
+        jugador = player.jugador,
+        sessions = sessions.size,
+        tlMade = tlMade,
+        tlAttempted = tlAttempted,
+        t2Made = t2Made,
+        t2Attempted = t2Attempted,
+        t3Made = t3Made,
+        t3Attempted = t3Attempted,
+        totalMade = totalMade,
+        totalAttempted = totalAttempted,
+        rightPct = rightPct,
+        leftPct = leftPct,
+        bestSide = rankingBestSideLabel(rightPct, leftPct),
+        bestZoneT2 = rankingBestZoneT2Label(merged, tipusPista),
+        bestZoneT3 = rankingBestZoneT3Label(merged, tipusPista)
     )
 }
 
 private fun buildTeamTotalRow(
     players: List<JugadorSessionsExport>,
-    rows: List<TeamExportRow>
+    rows: List<TeamExportRow>,
+    tipusPista: String
 ): TeamExportRow {
     val allSessions = players.flatMap { it.sessions }.sortedBy { it.num_sessio }
-    val merged = mergeSessionsRanking(allSessions, rows.first().jugador.id_jugador)
+    val merged = mergeSessionsRanking(
+        allSessions,
+        rows.firstOrNull()?.jugador?.id_jugador ?: ""
+    )
 
     val tlMade = rows.sumOf { it.tlMade }
     val tlAttempted = rows.sumOf { it.tlAttempted }
+
     val t2Made = rows.sumOf { it.t2Made }
     val t2Attempted = rows.sumOf { it.t2Attempted }
+
     val t3Made = rows.sumOf { it.t3Made }
     val t3Attempted = rows.sumOf { it.t3Attempted }
+
     val totalMade = rows.sumOf { it.totalMade }
     val totalAttempted = rows.sumOf { it.totalAttempted }
 
     val rightMade = allSessions.sumOf { it.fets_pos_1 + it.fets_pos_4 + it.fets_pos_7 + it.fets_pos_10 }
     val rightAttempted = allSessions.sumOf { it.tirs_pos_1 + it.tirs_pos_4 + it.tirs_pos_7 + it.tirs_pos_10 }
+
     val leftMade = allSessions.sumOf { it.fets_pos_3 + it.fets_pos_5 + it.fets_pos_9 + it.fets_pos_11 }
     val leftAttempted = allSessions.sumOf { it.tirs_pos_3 + it.tirs_pos_5 + it.tirs_pos_9 + it.tirs_pos_11 }
 
     val rightPct = rankingPctOrNull(rightMade, rightAttempted)
     val leftPct = rankingPctOrNull(leftMade, leftAttempted)
 
+    val jugador = rows.firstOrNull()?.jugador ?: Jugador(nom_jugador = "TOTAL EQUIP")
+
     return TeamExportRow(
-        jugador = rows.first().jugador,
+        jugador = jugador,
         sessions = rows.sumOf { it.sessions },
         tlMade = tlMade,
         tlAttempted = tlAttempted,
@@ -836,46 +914,43 @@ private fun buildTeamTotalRow(
         rightPct = rightPct,
         leftPct = leftPct,
         bestSide = rankingBestSideLabel(rightPct, leftPct),
-        bestZoneT2 = rankingBestZoneT2Label(merged),
-        bestZoneT3 = rankingBestZoneT3Label(merged),
+        bestZoneT2 = rankingBestZoneT2Label(merged, tipusPista),
+        bestZoneT3 = rankingBestZoneT3Label(merged, tipusPista),
         label = "TOTAL EQUIP",
         isTotalRow = true
     )
 }
 
+private fun buildTeamExportBestValues(rows: List<TeamExportRow>): TeamExportBestValues {
+    val regularRows = rows.filterNot { it.isTotalRow }
+
+    return TeamExportBestValues(
+        sessions = regularRows.maxOfOrNull { it.sessions } ?: 0,
+        tlMade = regularRows.maxOfOrNull { it.tlMade } ?: 0,
+        tlPct = regularRows.mapNotNull { it.tlPct }.maxOrNull(),
+        t2Made = regularRows.maxOfOrNull { it.t2Made } ?: 0,
+        t2Pct = regularRows.mapNotNull { it.t2Pct }.maxOrNull(),
+        t3Made = regularRows.maxOfOrNull { it.t3Made } ?: 0,
+        t3Pct = regularRows.mapNotNull { it.t3Pct }.maxOrNull(),
+        totalMade = regularRows.maxOfOrNull { it.totalMade } ?: 0,
+        totalPct = regularRows.mapNotNull { it.totalPct }.maxOrNull(),
+        rightPct = regularRows.mapNotNull { it.rightPct }.maxOrNull(),
+        leftPct = regularRows.mapNotNull { it.leftPct }.maxOrNull()
+    )
+}
+
 private fun buildTeamSessionAggregates(players: List<JugadorSessionsExport>): List<Sessio> {
-    return players
-        .flatMap { it.sessions }
+    val allSessions = players.flatMap { it.sessions }
+    if (allSessions.isEmpty()) return emptyList()
+
+    return allSessions
         .groupBy { it.num_sessio }
         .toSortedMap()
-        .map { (numSessio, groupedSessions) ->
-            val merged = mergeSessionsRanking(groupedSessions, "__team__$numSessio")
-            Sessio(
-                num_sessio = numSessio,
-                id_jugador = merged.id_jugador,
-                fets_pos_1 = merged.fets_pos_1,
-                tirs_pos_1 = merged.tirs_pos_1,
-                fets_pos_2 = merged.fets_pos_2,
-                tirs_pos_2 = merged.tirs_pos_2,
-                fets_pos_3 = merged.fets_pos_3,
-                tirs_pos_3 = merged.tirs_pos_3,
-                fets_pos_4 = merged.fets_pos_4,
-                tirs_pos_4 = merged.tirs_pos_4,
-                fets_pos_5 = merged.fets_pos_5,
-                tirs_pos_5 = merged.tirs_pos_5,
-                fets_pos_6 = merged.fets_pos_6,
-                tirs_pos_6 = merged.tirs_pos_6,
-                fets_pos_7 = merged.fets_pos_7,
-                tirs_pos_7 = merged.tirs_pos_7,
-                fets_pos_8 = merged.fets_pos_8,
-                tirs_pos_8 = merged.tirs_pos_8,
-                fets_pos_9 = merged.fets_pos_9,
-                tirs_pos_9 = merged.tirs_pos_9,
-                fets_pos_10 = merged.fets_pos_10,
-                tirs_pos_10 = merged.tirs_pos_10,
-                fets_pos_11 = merged.fets_pos_11,
-                tirs_pos_11 = merged.tirs_pos_11
-            )
+        .map { (sessionNumber, sessions) ->
+            mergeSessionsRanking(
+                sessions = sessions,
+                jugadorId = "team"
+            ).copy(num_sessio = sessionNumber)
         }
 }
 
@@ -892,37 +967,34 @@ private fun drawTeamSummaryPages(
     val pageWidth = 1650
     val pageHeight = 1000
     val margin = 45f
-    val rowHeight = 42f
+    val rowHeight = 30f
 
     val columns = listOf(
-        RankingPdfColumn("Jugadora", 190f),
-        RankingPdfColumn("Sess.", 65f),
-        RankingPdfColumn("TL", 90f),
+        RankingPdfColumn("Jugadora", 170f),
+        RankingPdfColumn("Sessions", 85f),
+        RankingPdfColumn("TL", 85f),
         RankingPdfColumn("TL %", 70f),
-        RankingPdfColumn("T2", 90f),
+        RankingPdfColumn("T2", 85f),
         RankingPdfColumn("T2%", 70f),
-        RankingPdfColumn("T3", 90f),
+        RankingPdfColumn("T3", 85f),
         RankingPdfColumn("T3%", 70f),
-        RankingPdfColumn("TOTAL", 100f),
-        RankingPdfColumn("TOTAL %", 80f),
+        RankingPdfColumn("TOTAL", 95f),
+        RankingPdfColumn("TOTAL %", 85f),
         RankingPdfColumn("Dreta %", 85f),
         RankingPdfColumn("Esquerra %", 95f),
-        RankingPdfColumn("Millor costat", 120f),
-        RankingPdfColumn("Millor zona T2", 160f),
-        RankingPdfColumn("Millor zona T3", 160f)
+        RankingPdfColumn("Millor costat", 110f),
+        RankingPdfColumn("Millor zona T2", 130f),
+        RankingPdfColumn("Millor zona T3", 130f)
     )
 
     val allRows = rows + totalRow
-
+    val firstPageRows = 12
+    val otherPageRows = 24
     var pageNumber = startPageNumber
 
-    val chartArea = RectF(45f, 130f, 830f, 350f)
-    val legendY = 430f
-    val firstPageHeaderY = 520f
-    val otherPageHeaderY = 120f
-
-    val firstPageRows = (((pageHeight - firstPageHeaderY - 40f) / rowHeight).toInt() - 1).coerceAtLeast(1)
-    val otherPageRows = (((pageHeight - otherPageHeaderY - 40f) / rowHeight).toInt() - 1).coerceAtLeast(1)
+    val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
+    val firstPage = document.startPage(pageInfo)
+    val firstCanvas = firstPage.canvas
 
     val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textSize = 28f
@@ -934,27 +1006,27 @@ private fun drawTeamSummaryPages(
         color = android.graphics.Color.DKGRAY
     }
 
-    val firstPageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
-    val firstPage = document.startPage(firstPageInfo)
-    val firstCanvas = firstPage.canvas
+    firstCanvas.drawText("Estadistiques equip", margin, 48f, titlePaint)
+    firstCanvas.drawText("Gràfic de sessions i taula global per jugadores", margin, 78f, subtitlePaint)
 
-    firstCanvas.drawText("Estadistiques equip", margin, 55f, titlePaint)
-    firstCanvas.drawText("Gràfic global i taula global per jugadores", margin, 90f, subtitlePaint)
-
+    val chartRect = RectF(45f, 120f, 850f, 420f)
     drawRankingPdfProgressChart(
         canvas = firstCanvas,
-        area = chartArea,
-        title = "Gràfic global equip",
+        area = chartRect,
+        title = "Gràfic de sessions",
         tripleData = tripleData,
         freeThrowData = freeThrowData,
         twoPointData = twoPointData
     )
-    drawRankingPdfLegend(firstCanvas, startX = 60f, y = legendY)
 
+    drawRankingPdfLegend(firstCanvas, startX = 60f, y = 505f)
+
+    val firstPageHeaderY = 570f
     val tableFitsOnFirstPage = allRows.size <= firstPageRows
 
     if (tableFitsOnFirstPage) {
-        firstCanvas.drawText("Taula global per jugadores", margin, 490f, subtitlePaint)
+        firstCanvas.drawText("Taula global per jugadores", margin, 545f, subtitlePaint)
+
         drawRankingPdfTableHeader(
             canvas = firstCanvas,
             startX = margin,
@@ -987,8 +1059,8 @@ private fun drawTeamSummaryPages(
     pageNumber++
 
     allRows.chunked(otherPageRows).forEachIndexed { index, chunk ->
-        val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
-        val page = document.startPage(pageInfo)
+        val pageInfoChunk = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
+        val page = document.startPage(pageInfoChunk)
         val canvas = page.canvas
 
         canvas.drawText("Estadistiques equip", margin, 55f, titlePaint)
@@ -999,16 +1071,18 @@ private fun drawTeamSummaryPages(
             subtitlePaint
         )
 
+        val headerY = 120f
+
         drawRankingPdfTableHeader(
             canvas = canvas,
             startX = margin,
-            startY = otherPageHeaderY,
+            startY = headerY,
             columns = columns,
             rowHeight = rowHeight,
             textSize = 16f
         )
 
-        var y = otherPageHeaderY + rowHeight
+        var y = headerY + rowHeight
         chunk.forEach { row ->
             drawTeamExportRow(
                 canvas = canvas,
@@ -1034,27 +1108,27 @@ private fun drawTeamPlayerPages(
     document: PdfDocument,
     startPageNumber: Int,
     nomJugador: String,
-    sessions: List<Sessio>
+    sessions: List<Sessio>,
+    tipusPista: String
 ): Int {
     val orderedSessions = sessions.sortedBy { it.num_sessio }
-    val tableRows = orderedSessions.map { it.toTeamPdfPlayerRow() }
-    val totalRow = buildTeamPdfPlayerTotalRow(orderedSessions)
-    val rowsWithTotal = if (tableRows.isEmpty()) listOf(totalRow) else {
-        tableRows + totalRow
-    }
+    val tableRows = orderedSessions.map { it.toTeamPdfPlayerRow(tipusPista) }
+    val totalRow = buildTeamPdfPlayerTotalRow(orderedSessions, tipusPista)
+    val rowsWithTotal = if (tableRows.isEmpty()) listOf(totalRow) else tableRows + totalRow
+
     val globalSession = mergeSessionsRanking(
         orderedSessions,
         orderedSessions.firstOrNull()?.id_jugador ?: ""
     )
 
     val tripleData = orderedSessions.mapIndexed { index, s ->
-        TeamPdfProgressPoint(index, s.num_sessio.toString(), s.rankingThreePointPct())
+        TeamPdfProgressPoint(index, s.num_sessio.toString(), s.rankingThreePointPct(tipusPista))
     }
     val freeThrowData = orderedSessions.mapIndexed { index, s ->
         TeamPdfProgressPoint(index, s.num_sessio.toString(), s.rankingFreeThrowPct())
     }
     val twoPointData = orderedSessions.mapIndexed { index, s ->
-        TeamPdfProgressPoint(index, s.num_sessio.toString(), s.rankingTwoPointPct())
+        TeamPdfProgressPoint(index, s.num_sessio.toString(), s.rankingTwoPointPct(tipusPista))
     }
 
     val pageWidth = 1650
@@ -1112,7 +1186,8 @@ private fun drawTeamPlayerPages(
             freeThrowData = freeThrowData,
             twoPointData = twoPointData
         )
-        drawRankingPdfLegend(canvas, startX = 60f, y = 470f)
+
+        drawRankingPdfLegend(canvas, startX = 60f, y = 500f)
 
         val mapHeight = chartRect.height()
         val mapWidth = mapHeight * (453f / 339f)
@@ -1127,9 +1202,9 @@ private fun drawTeamPlayerPages(
             height = mapHeight
         )
 
-        canvas.drawText("Taula per sessions", 45f, 520f, subtitlePaint)
+        canvas.drawText("Taula per sessions", 45f, 540f, subtitlePaint)
 
-        val headerY = 550f
+        val headerY = 570f
         val availableHeight = pageHeight - headerY - 40f
         val rowHeight = ((availableHeight - 34f) / (chunk.size + 1)).coerceIn(20f, 30f)
         val textSize = (rowHeight * 0.42f).coerceIn(9f, 13f)
@@ -1163,51 +1238,6 @@ private fun drawTeamPlayerPages(
     }
 
     return pageNumber
-}
-
-private fun buildTeamExportRow(player: JugadorSessionsExport): TeamExportRow {
-    val sessions = player.sessions.sortedBy { it.num_sessio }
-
-    val tlMade = sessions.sumOf { it.fets_pos_6 }
-    val tlAttempted = sessions.sumOf { it.tirs_pos_6 }
-
-    val t2Made = sessions.sumOf { it.fets_pos_4 + it.fets_pos_5 + it.fets_pos_7 + it.fets_pos_8 + it.fets_pos_9 }
-    val t2Attempted = sessions.sumOf { it.tirs_pos_4 + it.tirs_pos_5 + it.tirs_pos_7 + it.tirs_pos_8 + it.tirs_pos_9 }
-
-    val t3Made = sessions.sumOf { it.fets_pos_1 + it.fets_pos_2 + it.fets_pos_3 + it.fets_pos_10 + it.fets_pos_11 }
-    val t3Attempted = sessions.sumOf { it.tirs_pos_1 + it.tirs_pos_2 + it.tirs_pos_3 + it.tirs_pos_10 + it.tirs_pos_11 }
-
-    val totalMade = tlMade + t2Made + t3Made
-    val totalAttempted = tlAttempted + t2Attempted + t3Attempted
-
-    val rightMade = sessions.sumOf { it.fets_pos_1 + it.fets_pos_4 + it.fets_pos_7 + it.fets_pos_10 }
-    val rightAttempted = sessions.sumOf { it.tirs_pos_1 + it.tirs_pos_4 + it.tirs_pos_7 + it.tirs_pos_10 }
-
-    val leftMade = sessions.sumOf { it.fets_pos_3 + it.fets_pos_5 + it.fets_pos_9 + it.fets_pos_11 }
-    val leftAttempted = sessions.sumOf { it.tirs_pos_3 + it.tirs_pos_5 + it.tirs_pos_9 + it.tirs_pos_11 }
-
-    val merged = mergeSessionsRanking(sessions, player.jugador.id_jugador)
-
-    val rightPct = rankingPctOrNull(rightMade, rightAttempted)
-    val leftPct = rankingPctOrNull(leftMade, leftAttempted)
-
-    return TeamExportRow(
-        jugador = player.jugador,
-        sessions = sessions.size,
-        tlMade = tlMade,
-        tlAttempted = tlAttempted,
-        t2Made = t2Made,
-        t2Attempted = t2Attempted,
-        t3Made = t3Made,
-        t3Attempted = t3Attempted,
-        totalMade = totalMade,
-        totalAttempted = totalAttempted,
-        rightPct = rightPct,
-        leftPct = leftPct,
-        bestSide = rankingBestSideLabel(rightPct, leftPct),
-        bestZoneT2 = rankingBestZoneT2Label(merged),
-        bestZoneT3 = rankingBestZoneT3Label(merged)
-    )
 }
 
 private fun drawRankingPdfProgressChart(
@@ -1271,12 +1301,15 @@ private fun drawRankingPdfProgressChart(
         val valid = points.mapNotNull { point ->
             point.value?.let { value -> point.sessionIndex to value }
         }
+
         if (valid.isEmpty()) return
 
         val path = AndroidPath()
+
         valid.forEachIndexed { index, pair ->
             val x = xFor(pair.first)
             val y = yFor(pair.second)
+
             if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
         }
 
@@ -1285,12 +1318,14 @@ private fun drawRankingPdfProgressChart(
             strokeWidth = 3.5f
             this.color = color
         }
+
         val pointPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.FILL
             this.color = color
         }
 
         canvas.drawPath(path, linePaint)
+
         valid.forEach { pair ->
             canvas.drawCircle(xFor(pair.first), yFor(pair.second), 3.5f, pointPaint)
         }
@@ -1301,21 +1336,21 @@ private fun drawRankingPdfProgressChart(
     drawSeries(twoPointData, android.graphics.Color.parseColor("#EF6C00"))
 
     val xTicks = when {
-        sessionCount <= 1 -> listOf(0)
-        sessionCount <= 6 -> (0 until sessionCount).toList()
-        else -> listOf(0, (sessionCount - 1) / 2, sessionCount - 1).distinct()
+        sessionCount <= 1 -> listOf(1)
+        sessionCount <= 6 -> (1..sessionCount).toList()
+        else -> {
+            val middle = ((sessionCount - 1) / 2) + 1
+            listOf(1, middle, sessionCount).distinct()
+        }
     }
 
-    val labelsSource = listOf(tripleData, freeThrowData, twoPointData).firstOrNull { it.isNotEmpty() }.orEmpty()
-
-    xTicks.forEach { tickIndex ->
-        val x = xFor(tickIndex)
+    xTicks.forEach { tick ->
+        val x = xFor(tick - 1)
         canvas.drawLine(x, bottom, x, bottom + 7f, axisPaint)
-        val label = labelsSource.getOrNull(tickIndex)?.sessionLabel ?: (tickIndex + 1).toString()
-        canvas.drawText(label, x - 8f, bottom + 22f, textPaint)
+        canvas.drawText(tick.toString(), x - 4f, bottom + 22f, textPaint)
     }
 
-    canvas.drawText("Sessions", left + width / 4f - 25f, bottom + 44f, textPaint)
+    canvas.drawText("Sessions", left + width / 2f - 25f, bottom + 44f, textPaint)
 }
 
 private fun drawRankingPdfLegend(
@@ -1366,12 +1401,15 @@ private fun drawRankingPdfTableHeader(
     }
 
     var x = startX
+
     columns.forEach { column ->
         val rect = RectF(x, startY, x + column.width, startY + rowHeight)
         canvas.drawRect(rect, backgroundPaint)
         canvas.drawRect(rect, borderPaint)
+
         val textY = startY + rowHeight / 2f - (textPaint.descent() + textPaint.ascent()) / 2f
         canvas.drawText(column.title, x + 4f, textY, textPaint)
+
         x += column.width
     }
 }
@@ -1419,12 +1457,13 @@ private fun drawTeamExportRow(
     )
 
     var x = startX
+
     values.forEachIndexed { index, value ->
         val highlight = if (row.isTotalRow) {
             false
         } else {
             when (index) {
-                1 -> false
+                1 -> bestValues.sessions > 0 && row.sessions == bestValues.sessions
                 2 -> bestValues.tlMade > 0 && row.tlMade == bestValues.tlMade
                 3 -> bestValues.tlPct != null && row.tlPct != null && row.tlPct == bestValues.tlPct
                 4 -> bestValues.t2Made > 0 && row.t2Made == bestValues.t2Made
@@ -1448,21 +1487,23 @@ private fun drawTeamExportRow(
         val rect = RectF(x, startY, x + columns[index].width, startY + rowHeight)
         canvas.drawRect(rect, backgroundPaint)
         canvas.drawRect(rect, borderPaint)
+
         val textY = startY + rowHeight / 2f - (textPaint.descent() + textPaint.ascent()) / 2f
         canvas.drawText(value, x + 4f, textY, textPaint)
+
         x += columns[index].width
     }
 }
 
-private fun Sessio.toTeamPdfPlayerRow(): TeamPdfPlayerRow {
+private fun Sessio.toTeamPdfPlayerRow(tipusPista: String): TeamPdfPlayerRow {
     val tlMade = fets_pos_6
     val tlAttempted = tirs_pos_6
 
-    val t2Made = fets_pos_4 + fets_pos_5 + fets_pos_7 + fets_pos_8 + fets_pos_9
-    val t2Attempted = tirs_pos_4 + tirs_pos_5 + tirs_pos_7 + tirs_pos_8 + tirs_pos_9
+    val t2Made = rankingTwoPointMade(tipusPista)
+    val t2Attempted = rankingTwoPointAttempted(tipusPista)
 
-    val t3Made = fets_pos_1 + fets_pos_2 + fets_pos_3 + fets_pos_10 + fets_pos_11
-    val t3Attempted = tirs_pos_1 + tirs_pos_2 + tirs_pos_3 + tirs_pos_10 + tirs_pos_11
+    val t3Made = rankingThreePointMade(tipusPista)
+    val t3Attempted = rankingThreePointAttempted(tipusPista)
 
     val totalMade = tlMade + t2Made + t3Made
     val totalAttempted = tlAttempted + t2Attempted + t3Attempted
@@ -1489,20 +1530,23 @@ private fun Sessio.toTeamPdfPlayerRow(): TeamPdfPlayerRow {
         rightPct = rightPct,
         leftPct = leftPct,
         bestSide = rankingBestSideLabel(rightPct, leftPct),
-        bestZoneT2 = rankingBestZoneT2Label(this),
-        bestZoneT3 = rankingBestZoneT3Label(this)
+        bestZoneT2 = rankingBestZoneT2Label(this, tipusPista),
+        bestZoneT3 = rankingBestZoneT3Label(this, tipusPista)
     )
 }
 
-private fun buildTeamPdfPlayerTotalRow(sessions: List<Sessio>): TeamPdfPlayerRow {
+private fun buildTeamPdfPlayerTotalRow(
+    sessions: List<Sessio>,
+    tipusPista: String
+): TeamPdfPlayerRow {
     val tlMade = sessions.sumOf { it.fets_pos_6 }
     val tlAttempted = sessions.sumOf { it.tirs_pos_6 }
 
-    val t2Made = sessions.sumOf { it.fets_pos_4 + it.fets_pos_5 + it.fets_pos_7 + it.fets_pos_8 + it.fets_pos_9 }
-    val t2Attempted = sessions.sumOf { it.tirs_pos_4 + it.tirs_pos_5 + it.tirs_pos_7 + it.tirs_pos_8 + it.tirs_pos_9 }
+    val t2Made = sessions.sumOf { it.rankingTwoPointMade(tipusPista) }
+    val t2Attempted = sessions.sumOf { it.rankingTwoPointAttempted(tipusPista) }
 
-    val t3Made = sessions.sumOf { it.fets_pos_1 + it.fets_pos_2 + it.fets_pos_3 + it.fets_pos_10 + it.fets_pos_11 }
-    val t3Attempted = sessions.sumOf { it.tirs_pos_1 + it.tirs_pos_2 + it.tirs_pos_3 + it.tirs_pos_10 + it.tirs_pos_11 }
+    val t3Made = sessions.sumOf { it.rankingThreePointMade(tipusPista) }
+    val t3Attempted = sessions.sumOf { it.rankingThreePointAttempted(tipusPista) }
 
     val totalMade = tlMade + t2Made + t3Made
     val totalAttempted = tlAttempted + t2Attempted + t3Attempted
@@ -1534,8 +1578,8 @@ private fun buildTeamPdfPlayerTotalRow(sessions: List<Sessio>): TeamPdfPlayerRow
         rightPct = rightPct,
         leftPct = leftPct,
         bestSide = rankingBestSideLabel(rightPct, leftPct),
-        bestZoneT2 = rankingBestZoneT2Label(merged),
-        bestZoneT3 = rankingBestZoneT3Label(merged)
+        bestZoneT2 = rankingBestZoneT2Label(merged, tipusPista),
+        bestZoneT3 = rankingBestZoneT3Label(merged, tipusPista)
     )
 }
 
@@ -1586,12 +1630,16 @@ private fun drawTeamPdfPlayerStatsRow(
     )
 
     var x = startX
+
     values.forEachIndexed { index, value ->
         val rect = RectF(x, startY, x + columns[index].width, startY + rowHeight)
+
         canvas.drawRect(rect, bgPaint)
         canvas.drawRect(rect, borderPaint)
+
         val textY = startY + rowHeight / 2f - (textPaint.descent() + textPaint.ascent()) / 2f
         canvas.drawText(value, x + 4f, textY, textPaint)
+
         x += columns[index].width
     }
 }
@@ -1718,17 +1766,21 @@ private fun drawRankingPdfCourtMap(
 
     fun zonePath(zone: Int): AndroidPath {
         return when (zone) {
-            1 -> buildRectPath(left, top, left + third, topSplitY)
+            1 -> buildRectPath(left, top, left + third, lowerSplitY)
             2 -> buildRectPath(left + third, top, left + 2f * third, topSplitY)
-            3 -> buildRectPath(left + 2f * third, top, right, topSplitY)
+            3 -> buildRectPath(left + 2f * third, top, right, lowerSplitY)
+
             4 -> buildQuarterCirclePath(bigCenterX, bigCenterY, threePointRadius, true)
             5 -> buildQuarterCirclePath(bigCenterX, bigCenterY, threePointRadius, false)
             6 -> buildFreeThrowSemicirclePath(freeThrowCenterX, freeThrowCenterY, freeThrowRadius)
+
             7 -> buildRectPath(leftArcX, lowerSplitY, paintLeft, bottom)
             8 -> buildRectPath(paintLeft, topSplitY, paintRight, bottom)
             9 -> buildRectPath(paintRight, lowerSplitY, rightArcX, bottom)
-            10 -> buildRectPath(left, topSplitY, leftArcX, bottom)
-            11 -> buildRectPath(rightArcX, topSplitY, right, bottom)
+
+            10 -> buildRectPath(left, lowerSplitY, leftArcX, bottom)
+            11 -> buildRectPath(rightArcX, lowerSplitY, right, bottom)
+
             else -> buildRectPath(left, top, right, bottom)
         }
     }
@@ -1845,14 +1897,23 @@ private fun mergeSessionsRanking(
     )
 }
 
-private fun rankingBestZoneT2Label(s: Sessio): String {
-    val zones = listOf(
-        RankingZoneStat("Poste alt dreta", s.fets_pos_4, s.tirs_pos_4),
-        RankingZoneStat("Poste alt esquerra", s.fets_pos_5, s.tirs_pos_5),
-        RankingZoneStat("Poste baix dreta", s.fets_pos_7, s.tirs_pos_7),
-        RankingZoneStat("Ampolla", s.fets_pos_8, s.tirs_pos_8),
-        RankingZoneStat("Poste baix esquerra", s.fets_pos_9, s.tirs_pos_9)
-    ).filter { it.attempted > 0 }
+private fun rankingBestZoneT2Label(
+    s: Sessio,
+    tipusPista: String
+): String {
+    val zones = if (rankingIsBaseCourt(tipusPista)) {
+        listOf(
+            RankingZoneStat("Ampolla", s.fets_pos_8, s.tirs_pos_8)
+        )
+    } else {
+        listOf(
+            RankingZoneStat("Poste alt dreta", s.fets_pos_4, s.tirs_pos_4),
+            RankingZoneStat("Poste alt esquerra", s.fets_pos_5, s.tirs_pos_5),
+            RankingZoneStat("Poste baix dreta", s.fets_pos_7, s.tirs_pos_7),
+            RankingZoneStat("Ampolla", s.fets_pos_8, s.tirs_pos_8),
+            RankingZoneStat("Poste baix esquerra", s.fets_pos_9, s.tirs_pos_9)
+        )
+    }.filter { it.attempted > 0 }
 
     if (zones.isEmpty()) return "-"
 
@@ -1861,14 +1922,31 @@ private fun rankingBestZoneT2Label(s: Sessio): String {
     )?.label ?: "-"
 }
 
-private fun rankingBestZoneT3Label(s: Sessio): String {
-    val zones = listOf(
-        RankingZoneStat("45 dreta", s.fets_pos_1, s.tirs_pos_1),
-        RankingZoneStat("Mig", s.fets_pos_2, s.tirs_pos_2),
-        RankingZoneStat("45 esquerra", s.fets_pos_3, s.tirs_pos_3),
-        RankingZoneStat("Cantonada dreta", s.fets_pos_10, s.tirs_pos_10),
-        RankingZoneStat("Cantonada esquerra", s.fets_pos_11, s.tirs_pos_11)
-    ).filter { it.attempted > 0 }
+private fun rankingBestZoneT3Label(
+    s: Sessio,
+    tipusPista: String
+): String {
+    val zones = if (rankingIsBaseCourt(tipusPista)) {
+        listOf(
+            RankingZoneStat("45 dreta", s.fets_pos_1, s.tirs_pos_1),
+            RankingZoneStat("Mig", s.fets_pos_2, s.tirs_pos_2),
+            RankingZoneStat("45 esquerra", s.fets_pos_3, s.tirs_pos_3),
+            RankingZoneStat("Triple alt dreta", s.fets_pos_4, s.tirs_pos_4),
+            RankingZoneStat("Triple alt esquerra", s.fets_pos_5, s.tirs_pos_5),
+            RankingZoneStat("Triple baix dreta", s.fets_pos_7, s.tirs_pos_7),
+            RankingZoneStat("Triple baix esquerra", s.fets_pos_9, s.tirs_pos_9),
+            RankingZoneStat("Cantonada dreta", s.fets_pos_10, s.tirs_pos_10),
+            RankingZoneStat("Cantonada esquerra", s.fets_pos_11, s.tirs_pos_11)
+        )
+    } else {
+        listOf(
+            RankingZoneStat("45 dreta", s.fets_pos_1, s.tirs_pos_1),
+            RankingZoneStat("Mig", s.fets_pos_2, s.tirs_pos_2),
+            RankingZoneStat("45 esquerra", s.fets_pos_3, s.tirs_pos_3),
+            RankingZoneStat("Cantonada dreta", s.fets_pos_10, s.tirs_pos_10),
+            RankingZoneStat("Cantonada esquerra", s.fets_pos_11, s.tirs_pos_11)
+        )
+    }.filter { it.attempted > 0 }
 
     if (zones.isEmpty()) return "-"
 
@@ -1885,6 +1963,7 @@ private fun rankingBestSideLabel(rightPct: Float?, leftPct: Float?): String {
         else -> {
             val right = rightPct ?: 0f
             val left = leftPct ?: 0f
+
             when {
                 right > left -> "Dreta"
                 left > right -> "Esquerra"
@@ -1899,29 +1978,90 @@ private fun rankingFormatPct(made: Int, attempted: Int): String {
     return "${pct.toInt()}%"
 }
 
-private fun Sessio.rankingThreePointPct(): Float? {
-    val made = fets_pos_1 + fets_pos_2 + fets_pos_3 + fets_pos_10 + fets_pos_11
-    val attempted = tirs_pos_1 + tirs_pos_2 + tirs_pos_3 + tirs_pos_10 + tirs_pos_11
-    return rankingPctOrNull(made, attempted)
+private fun Float?.toRankingPdfPercent(): String {
+    return this?.let { "${it.toInt()}%" } ?: "-"
+}
+
+private fun rankingPctOrNull(made: Int, attempted: Int): Float? {
+    if (attempted <= 0) return null
+    return (made.toFloat() / attempted.toFloat()) * 100f
+}
+
+private fun Sessio.rankingThreePointPct(tipusPista: String): Float? {
+    return rankingPctOrNull(
+        made = rankingThreePointMade(tipusPista),
+        attempted = rankingThreePointAttempted(tipusPista)
+    )
 }
 
 private fun Sessio.rankingFreeThrowPct(): Float? {
     return rankingPctOrNull(fets_pos_6, tirs_pos_6)
 }
 
-private fun Sessio.rankingTwoPointPct(): Float? {
-    val made = fets_pos_4 + fets_pos_5 + fets_pos_7 + fets_pos_8 + fets_pos_9
-    val attempted = tirs_pos_4 + tirs_pos_5 + tirs_pos_7 + tirs_pos_8 + tirs_pos_9
-    return rankingPctOrNull(made, attempted)
+private fun Sessio.rankingTwoPointPct(tipusPista: String): Float? {
+    return rankingPctOrNull(
+        made = rankingTwoPointMade(tipusPista),
+        attempted = rankingTwoPointAttempted(tipusPista)
+    )
 }
 
-fun rankingPctOrNull(made: Int, attempted: Int): Float? {
-    if (attempted <= 0) return null
-    return (made.toFloat() / attempted.toFloat()) * 100f
+private fun Sessio.rankingThreePointMade(tipusPista: String): Int {
+    return if (rankingIsBaseCourt(tipusPista)) {
+        fets_pos_1 + fets_pos_2 + fets_pos_3 +
+                fets_pos_4 + fets_pos_5 +
+                fets_pos_7 + fets_pos_9 +
+                fets_pos_10 + fets_pos_11
+    } else {
+        fets_pos_1 + fets_pos_2 + fets_pos_3 +
+                fets_pos_10 + fets_pos_11
+    }
 }
 
-private fun Float?.toRankingPdfPercent(): String {
-    return this?.let { "${it.toInt()}%" } ?: "-"
+private fun Sessio.rankingThreePointAttempted(tipusPista: String): Int {
+    return if (rankingIsBaseCourt(tipusPista)) {
+        tirs_pos_1 + tirs_pos_2 + tirs_pos_3 +
+                tirs_pos_4 + tirs_pos_5 +
+                tirs_pos_7 + tirs_pos_9 +
+                tirs_pos_10 + tirs_pos_11
+    } else {
+        tirs_pos_1 + tirs_pos_2 + tirs_pos_3 +
+                tirs_pos_10 + tirs_pos_11
+    }
+}
+
+private fun Sessio.rankingTwoPointMade(tipusPista: String): Int {
+    return if (rankingIsBaseCourt(tipusPista)) {
+        fets_pos_8
+    } else {
+        fets_pos_4 + fets_pos_5 + fets_pos_7 + fets_pos_8 + fets_pos_9
+    }
+}
+
+private fun Sessio.rankingTwoPointAttempted(tipusPista: String): Int {
+    return if (rankingIsBaseCourt(tipusPista)) {
+        tirs_pos_8
+    } else {
+        tirs_pos_4 + tirs_pos_5 + tirs_pos_7 + tirs_pos_8 + tirs_pos_9
+    }
+}
+
+private fun rankingIsBaseCourt(tipusPista: String): Boolean {
+    return tipusPista.equals("Base", ignoreCase = true)
+}
+
+private suspend fun loadTipusPistaByEquip(idEquip: String): String {
+    return try {
+        FirebaseProvider.firestore
+            .collection("equips")
+            .document(idEquip)
+            .get()
+            .await()
+            .getString("tipus_pista")
+            ?.takeIf { it.isNotBlank() }
+            ?: "Amateur"
+    } catch (_: Exception) {
+        "Amateur"
+    }
 }
 
 private fun rankingZoneMadeAttempted(session: Sessio, zone: Int): Pair<Int, Int> {

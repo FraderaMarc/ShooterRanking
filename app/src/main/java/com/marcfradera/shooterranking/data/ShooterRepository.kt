@@ -300,11 +300,16 @@ class ShooterRepository(
         }
     }
 
-    suspend fun createEquip(nomEquip: String, idTemporada: String): Equip {
+    suspend fun createEquip(
+        nomEquip: String,
+        idTemporada: String,
+        tipusPista: String = "Base"
+    ): Equip {
         val uid = currentUid()
         val data = hashMapOf(
-            "nom_equip" to nomEquip,
+            "nom_equip" to nomEquip.trim(),
             "id_temporada" to idTemporada,
+            "tipus_pista" to tipusPista,
             "userId" to uid
         )
 
@@ -315,6 +320,20 @@ class ShooterRepository(
                 ?: throw IllegalStateException("No s'ha pogut crear l'equip.")
         } catch (e: Exception) {
             throw mapFirebaseError(e)
+        }
+    }
+
+    suspend fun getEquipTipusPista(idEquip: String): String {
+        return try {
+            db.collection("equips")
+                .document(idEquip)
+                .get()
+                .await()
+                .getString("tipus_pista")
+                ?.takeIf { it.isNotBlank() }
+                ?: "Amateur"
+        } catch (_: Exception) {
+            "Amateur"
         }
     }
 
@@ -471,11 +490,16 @@ class ShooterRepository(
     private fun DocumentSnapshot.toEquip(): Equip? {
         val nomEquip = getString("nom_equip") ?: return null
         val idTemporada = getString("id_temporada") ?: return null
+        val tipusPista = getString("tipus_pista")
+            ?.takeIf { it.isNotBlank() }
+            ?: "Amateur"
         val userId = getString("userId") ?: ""
+
         return Equip(
             id_equip = id,
             nom_equip = nomEquip,
             id_temporada = idTemporada,
+            tipus_pista = tipusPista,
             userId = userId
         )
     }
@@ -568,11 +592,20 @@ class ShooterRepository(
 
     suspend fun updateEquip(
         idEquip: String,
-        nomEquip: String
+        nomEquip: String,
+        tipusPista: String? = null
     ) {
+        val updateData = mutableMapOf<String, Any>(
+            "nom_equip" to nomEquip.trim()
+        )
+
+        if (!tipusPista.isNullOrBlank()) {
+            updateData["tipus_pista"] = tipusPista
+        }
+
         db.collection("equips")
             .document(idEquip)
-            .update("nom_equip", nomEquip.trim())
+            .update(updateData)
             .await()
     }
 
@@ -626,6 +659,10 @@ class ShooterRepository(
             jugadors = jugadors,
             sessionsCount = sessionsCount
         )
+    }
+
+    suspend fun equipHasSessions(idEquip: String): Boolean {
+        return getEquipDeletePreview(idEquip).sessionsCount > 0
     }
 
     suspend fun deleteJugadorCascade(idJugador: String) {

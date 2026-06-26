@@ -49,10 +49,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.marcfradera.shooterranking.data.FirebaseProvider
 import com.marcfradera.shooterranking.data.model.Jugador
 import com.marcfradera.shooterranking.data.model.Sessio
 import com.marcfradera.shooterranking.ui.vm.JugadorsViewModel
 import com.marcfradera.shooterranking.ui.vm.ShotSessionViewModel
+import kotlinx.coroutines.tasks.await
 import kotlin.math.sqrt
 
 @Composable
@@ -76,6 +78,7 @@ fun ShotMapScreen(
     var playersExpanded by remember { mutableStateOf(false) }
     var showDeleteSessionDialog by remember { mutableStateOf(false) }
 
+    var tipusPista by remember(idEquip) { mutableStateOf("Amateur") }
     var screenActive by remember { mutableStateOf(true) }
 
     DisposableEffect(Unit) {
@@ -87,6 +90,19 @@ fun ShotMapScreen(
 
     LaunchedEffect(idEquip) {
         playersVm.load(idEquip)
+
+        tipusPista = try {
+            FirebaseProvider.firestore
+                .collection("equips")
+                .document(idEquip)
+                .get()
+                .await()
+                .getString("tipus_pista")
+                ?.takeIf { it.isNotBlank() }
+                ?: "Amateur"
+        } catch (_: Exception) {
+            "Amateur"
+        }
     }
 
     val players = (playersVm.state.data ?: emptyList()).sortedBy { it.nom_jugador.lowercase() }
@@ -313,6 +329,7 @@ fun ShotMapScreen(
 
         ZoneInputDialog(
             zone = zone,
+            tipusPista = tipusPista,
             initialMade = currentMade,
             initialAttempted = currentAttempted,
             onDismiss = { zoneDialog = null },
@@ -485,7 +502,7 @@ private fun CourtMap(
 
             val dxPaint = paintLeft - bigArcCenter.x
             val arcPaintIntersectionY =
-                bigArcCenter.y - kotlin.math.sqrt((rThree * rThree) - (dxPaint * dxPaint))
+                bigArcCenter.y - sqrt((rThree * rThree) - (dxPaint * dxPaint))
 
             fun drawZoneFill(zone: Int) {
                 val (made, attempted) = session.zoneMadeAttempted(zone)
@@ -710,17 +727,22 @@ private fun zonePath(
         Path().apply { addRect(Rect(left, top, right, bottom)) }
 
     return when (zone) {
-        1 -> rectPath(0f, 0f, thirdWidth, topSplitY)
+        1 -> rectPath(0f, 0f, thirdWidth, lowerSplitY)
         2 -> rectPath(thirdWidth, 0f, 2f * thirdWidth, topSplitY)
-        3 -> rectPath(2f * thirdWidth, 0f, width, topSplitY)
+        3 -> rectPath(2f * thirdWidth, 0f, width, lowerSplitY)
+
         4 -> quarterCirclePath(bigArcCenter, threePointRadius, true)
         5 -> quarterCirclePath(bigArcCenter, threePointRadius, false)
+
         6 -> freeThrowSemicirclePath(freeThrowCenter, freeThrowRadius)
-        10 -> rectPath(0f, topSplitY, leftArcX, height)
-        7 -> rectPath(leftArcX, lowerSplitY, paintLeft, height)
         8 -> rectPath(paintLeft, topSplitY, paintRight, height)
+
+        7 -> rectPath(leftArcX, lowerSplitY, paintLeft, height)
         9 -> rectPath(paintRight, lowerSplitY, rightArcX, height)
-        11 -> rectPath(rightArcX, topSplitY, width, height)
+
+        10 -> rectPath(0f, lowerSplitY, leftArcX, height)
+        11 -> rectPath(rightArcX, lowerSplitY, width, height)
+
         else -> rectPath(0f, 0f, width, height)
     }
 }
@@ -816,17 +838,41 @@ private fun detectZone(x: Float, y: Float): Int? {
     if (x in paintLeft..paintRight) return 8
 
     if (x < paintLeft) {
-        return if (x < leftArcX) 10 else if (y >= lowerSplitY) 7 else 4
+        return when {
+            x < leftArcX && y < lowerSplitY -> 1
+            x < leftArcX -> 10
+            y >= lowerSplitY -> 7
+            else -> 4
+        }
     }
 
     return if (x < rightArcX) {
         if (y >= lowerSplitY) 9 else 5
     } else {
-        11
+        if (y < lowerSplitY) 3 else 11
     }
 }
 
-private fun zoneLabel(zone: Int): String {
+private fun zoneLabel(zone: Int, tipusPista: String): String {
+    val isBase = tipusPista.equals("Base", ignoreCase = true)
+
+    if (isBase) {
+        return when (zone) {
+            1 -> "Triple 45 Dreta"
+            2 -> "Triple Mig"
+            3 -> "Triple 45 Esquerra"
+            4 -> "Triple Alt Dreta"
+            5 -> "Triple Alt Esquerra"
+            6 -> "Tir Lliure"
+            7 -> "Triple Baix Dreta"
+            8 -> "Ampolla"
+            9 -> "Triple Baix Esquerra"
+            10 -> "Triple Cantonada Dreta"
+            11 -> "Triple Cantonada Esquerra"
+            else -> "Zona $zone"
+        }
+    }
+
     return when (zone) {
         1 -> "Triple 45 Dreta"
         2 -> "Triple Mig"
@@ -847,6 +893,7 @@ private fun zoneLabel(zone: Int): String {
 @Composable
 private fun ZoneInputDialog(
     zone: Int,
+    tipusPista: String,
     initialMade: Int,
     initialAttempted: Int,
     onDismiss: () -> Unit,
@@ -862,7 +909,7 @@ private fun ZoneInputDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(zoneLabel(zone)) },
+        title = { Text(zoneLabel(zone, tipusPista)) },
         text = {
             Column {
                 OutlinedTextField(

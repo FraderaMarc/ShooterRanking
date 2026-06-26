@@ -1,16 +1,21 @@
 package com.marcfradera.shooterranking.ui.fragments
 
 import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.marcfradera.shooterranking.R
@@ -39,7 +44,8 @@ class EquipsFragment : Fragment(R.layout.fragment_recycler_screen) {
             onEdit = {
                 showEditEquipDialog(
                     idEquip = it.equip.id_equip,
-                    initialNomEquip = it.equip.nom_equip
+                    initialNomEquip = it.equip.nom_equip,
+                    initialTipusPista = it.equip.tipus_pista
                 )
             },
             onDelete = {
@@ -126,6 +132,7 @@ class EquipsFragment : Fragment(R.layout.fragment_recycler_screen) {
         }
 
         val context = requireContext()
+        var tipusPistaSeleccionat = "Base"
 
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -137,7 +144,14 @@ class EquipsFragment : Fragment(R.layout.fragment_recycler_screen) {
             hint = "Nom de l'equip"
         }
 
+        val tipusPistaView = createTipusPistaSelector(
+            initialTipusPista = "Base",
+            enabled = true,
+            onSelected = { tipusPistaSeleccionat = it }
+        )
+
         container.addView(nomEdit)
+        container.addView(tipusPistaView)
 
         MaterialAlertDialogBuilder(context)
             .setTitle("Afegir equip")
@@ -158,6 +172,7 @@ class EquipsFragment : Fragment(R.layout.fragment_recycler_screen) {
                         vm.create(
                             temporadaId = temporadaId,
                             nomEquip = nom,
+                            tipusPista = tipusPistaSeleccionat,
                             onDone = { dialog.dismiss() },
                             onError = {
                                 Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
@@ -171,7 +186,8 @@ class EquipsFragment : Fragment(R.layout.fragment_recycler_screen) {
 
     private fun showEditEquipDialog(
         idEquip: String,
-        initialNomEquip: String
+        initialNomEquip: String,
+        initialTipusPista: String
     ) {
         val temporadaId = shared.selection.value?.temporadaId.orEmpty()
         if (temporadaId.isBlank()) {
@@ -180,7 +196,34 @@ class EquipsFragment : Fragment(R.layout.fragment_recycler_screen) {
             return
         }
 
+        vm.loadDeletePreview(
+            idEquip = idEquip,
+            onDone = { preview ->
+                val hasSessions = preview.sessionsCount > 0
+
+                showEditEquipDialogContent(
+                    idEquip = idEquip,
+                    temporadaId = temporadaId,
+                    initialNomEquip = initialNomEquip,
+                    initialTipusPista = initialTipusPista,
+                    canEditTipusPista = !hasSessions
+                )
+            },
+            onError = {
+                Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    private fun showEditEquipDialogContent(
+        idEquip: String,
+        temporadaId: String,
+        initialNomEquip: String,
+        initialTipusPista: String,
+        canEditTipusPista: Boolean
+    ) {
         val context = requireContext()
+        var tipusPistaSeleccionat = initialTipusPista.ifBlank { "Base" }
 
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -194,7 +237,30 @@ class EquipsFragment : Fragment(R.layout.fragment_recycler_screen) {
             setSelection(text.length)
         }
 
+        val tipusPistaView = createTipusPistaSelector(
+            initialTipusPista = tipusPistaSeleccionat,
+            enabled = canEditTipusPista,
+            onSelected = { tipusPistaSeleccionat = it }
+        )
+
         container.addView(nomEdit)
+        container.addView(tipusPistaView)
+
+        if (!canEditTipusPista) {
+            val warningText = TextView(context).apply {
+                text = "No es pot canviar el tipus de pista perquè aquest equip ja té sessions de tir registrades."
+                textSize = 13f
+                val topMargin = (8 * resources.displayMetrics.density).toInt()
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, topMargin, 0, 0)
+                }
+            }
+
+            container.addView(warningText)
+        }
 
         MaterialAlertDialogBuilder(context)
             .setTitle("Editar equip")
@@ -216,6 +282,7 @@ class EquipsFragment : Fragment(R.layout.fragment_recycler_screen) {
                             idEquip = idEquip,
                             temporadaId = temporadaId,
                             nomEquip = nom,
+                            tipusPista = tipusPistaSeleccionat,
                             onDone = { dialog.dismiss() },
                             onError = {
                                 Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
@@ -225,6 +292,103 @@ class EquipsFragment : Fragment(R.layout.fragment_recycler_screen) {
                 }
                 dialog.show()
             }
+    }
+
+    private fun createTipusPistaSelector(
+        initialTipusPista: String,
+        enabled: Boolean,
+        onSelected: (String) -> Unit
+    ): View {
+        val context = requireContext()
+        val density = resources.displayMetrics.density
+
+        val wrapper = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val title = TextView(context).apply {
+            text = "Tipus de pista"
+            textSize = 16f
+            setTypeface(typeface, Typeface.BOLD)
+            val topMargin = (18 * density).toInt()
+            val bottomMargin = (8 * density).toInt()
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, topMargin, 0, bottomMargin)
+            }
+        }
+
+        val toggleGroup = MaterialButtonToggleGroup(context).apply {
+            orientation = LinearLayout.VERTICAL
+            isSingleSelection = true
+            isSelectionRequired = true
+            isEnabled = enabled
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val baseButtonId = View.generateViewId()
+        val amateurButtonId = View.generateViewId()
+        val proButtonId = View.generateViewId()
+
+        fun createButton(idValue: Int, label: String): MaterialButton {
+            return MaterialButton(
+                context,
+                null,
+                com.google.android.material.R.attr.materialButtonOutlinedStyle
+            ).apply {
+                id = idValue
+                text = label
+                isCheckable = true
+                isEnabled = enabled
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+        }
+
+        val baseButton = createButton(baseButtonId, "Base")
+        val amateurButton = createButton(amateurButtonId, "Amateur")
+        val proButton = createButton(proButtonId, "Pro")
+
+        toggleGroup.addView(baseButton)
+        toggleGroup.addView(amateurButton)
+        toggleGroup.addView(proButton)
+
+        val selectedId = when (initialTipusPista) {
+            "Amateur" -> amateurButtonId
+            "Pro" -> proButtonId
+            else -> baseButtonId
+        }
+
+        toggleGroup.check(selectedId)
+
+        toggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+
+            val selected = when (checkedId) {
+                baseButtonId -> "Base"
+                amateurButtonId -> "Amateur"
+                proButtonId -> "Pro"
+                else -> "Base"
+            }
+
+            onSelected(selected)
+        }
+
+        wrapper.addView(title)
+        wrapper.addView(toggleGroup)
+
+        return wrapper
     }
 
     private fun showDeleteEquipDialog(idEquip: String, nomEquip: String) {

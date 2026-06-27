@@ -548,9 +548,9 @@ private suspend fun loadTipusPistaByEquip(idEquip: String): String {
             .await()
             .getString("tipus_pista")
             ?.takeIf { it.isNotBlank() }
-            ?: "Amateur"
+            ?: "FIBA"
     } catch (_: Exception) {
-        "Amateur"
+        "FIBA"
     }
 }
 

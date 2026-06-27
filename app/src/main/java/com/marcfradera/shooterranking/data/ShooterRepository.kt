@@ -331,9 +331,9 @@ class ShooterRepository(
                 .await()
                 .getString("tipus_pista")
                 ?.takeIf { it.isNotBlank() }
-                ?: "Amateur"
+                ?: "FIBA"
         } catch (_: Exception) {
-            "Amateur"
+            "FIBA"
         }
     }
 
@@ -407,26 +407,37 @@ class ShooterRepository(
             "num_sessio" to sessio.num_sessio,
             "id_jugador" to sessio.id_jugador,
             "userId" to uid,
+
             "tirs_pos_1" to sessio.tirs_pos_1,
             "fets_pos_1" to sessio.fets_pos_1,
+
             "tirs_pos_2" to sessio.tirs_pos_2,
             "fets_pos_2" to sessio.fets_pos_2,
+
             "tirs_pos_3" to sessio.tirs_pos_3,
             "fets_pos_3" to sessio.fets_pos_3,
+
             "tirs_pos_4" to sessio.tirs_pos_4,
             "fets_pos_4" to sessio.fets_pos_4,
+
             "tirs_pos_5" to sessio.tirs_pos_5,
             "fets_pos_5" to sessio.fets_pos_5,
+
             "tirs_pos_6" to sessio.tirs_pos_6,
             "fets_pos_6" to sessio.fets_pos_6,
+
             "tirs_pos_7" to sessio.tirs_pos_7,
             "fets_pos_7" to sessio.fets_pos_7,
+
             "tirs_pos_8" to sessio.tirs_pos_8,
             "fets_pos_8" to sessio.fets_pos_8,
+
             "tirs_pos_9" to sessio.tirs_pos_9,
             "fets_pos_9" to sessio.fets_pos_9,
+
             "tirs_pos_10" to sessio.tirs_pos_10,
             "fets_pos_10" to sessio.fets_pos_10,
+
             "tirs_pos_11" to sessio.tirs_pos_11,
             "fets_pos_11" to sessio.fets_pos_11
         )
@@ -492,7 +503,7 @@ class ShooterRepository(
         val idTemporada = getString("id_temporada") ?: return null
         val tipusPista = getString("tipus_pista")
             ?.takeIf { it.isNotBlank() }
-            ?: "Amateur"
+            ?: "FIBA"
         val userId = getString("userId") ?: ""
 
         return Equip(
@@ -531,26 +542,37 @@ class ShooterRepository(
             num_sessio = i("num_sessio"),
             id_jugador = idJugador,
             userId = userId,
+
             tirs_pos_1 = i("tirs_pos_1"),
             fets_pos_1 = i("fets_pos_1"),
+
             tirs_pos_2 = i("tirs_pos_2"),
             fets_pos_2 = i("fets_pos_2"),
+
             tirs_pos_3 = i("tirs_pos_3"),
             fets_pos_3 = i("fets_pos_3"),
+
             tirs_pos_4 = i("tirs_pos_4"),
             fets_pos_4 = i("fets_pos_4"),
+
             tirs_pos_5 = i("tirs_pos_5"),
             fets_pos_5 = i("fets_pos_5"),
+
             tirs_pos_6 = i("tirs_pos_6"),
             fets_pos_6 = i("fets_pos_6"),
+
             tirs_pos_7 = i("tirs_pos_7"),
             fets_pos_7 = i("fets_pos_7"),
+
             tirs_pos_8 = i("tirs_pos_8"),
             fets_pos_8 = i("fets_pos_8"),
+
             tirs_pos_9 = i("tirs_pos_9"),
             fets_pos_9 = i("fets_pos_9"),
+
             tirs_pos_10 = i("tirs_pos_10"),
             fets_pos_10 = i("fets_pos_10"),
+
             tirs_pos_11 = i("tirs_pos_11"),
             fets_pos_11 = i("fets_pos_11")
         )

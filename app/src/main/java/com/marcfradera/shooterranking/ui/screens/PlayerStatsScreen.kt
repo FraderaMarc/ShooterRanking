@@ -155,6 +155,11 @@ private data class TeamPdfPlayerRow(
     val bestZoneT3: String
 )
 
+private data class RankingPdfProZoneLayer(
+    val zone: Int,
+    val path: AndroidPath
+)
+
 @Composable
 fun JugadorsRankingScreen(
     idEquip: String,
@@ -742,7 +747,6 @@ private fun positionLabel(posicio: String): String {
         else -> "Posició desconeguda"
     }
 }
-
 private fun exportAllPlayersStatsPdfAndShare(
     context: Context,
     players: List<JugadorSessionsExport>,
@@ -1199,7 +1203,8 @@ private fun drawTeamPlayerPages(
             left = 1115f,
             top = 110f,
             width = mapWidth,
-            height = mapHeight
+            height = mapHeight,
+            tipusPista = tipusPista
         )
 
         canvas.drawText("Taula per sessions", 45f, 540f, subtitlePaint)
@@ -1239,7 +1244,6 @@ private fun drawTeamPlayerPages(
 
     return pageNumber
 }
-
 private fun drawRankingPdfProgressChart(
     canvas: android.graphics.Canvas,
     area: RectF,
@@ -1643,15 +1647,27 @@ private fun drawTeamPdfPlayerStatsRow(
         x += columns[index].width
     }
 }
-
 private fun drawRankingPdfCourtMap(
     canvas: android.graphics.Canvas,
     session: Sessio,
     left: Float,
     top: Float,
     width: Float,
-    height: Float
+    height: Float,
+    tipusPista: String
 ) {
+    if (tipusPista.equals("Pro", ignoreCase = true)) {
+        drawRankingPdfProCourtMap(
+            canvas = canvas,
+            session = session,
+            left = left,
+            top = top,
+            width = width,
+            height = height
+        )
+        return
+    }
+
     val aspectRatio = 453f / 339f
     val drawHeight = minOf(height, width / aspectRatio)
     val drawWidth = drawHeight * aspectRatio
@@ -1862,6 +1878,354 @@ private fun drawRankingPdfCourtMap(
         hoopCenterY,
         hoopRadius,
         linePaint
+    )
+}
+
+private fun drawRankingPdfProCourtMap(
+    canvas: android.graphics.Canvas,
+    session: Sessio,
+    left: Float,
+    top: Float,
+    width: Float,
+    height: Float
+) {
+    val aspectRatio = 453f / 339f
+    val drawHeight = minOf(height, width / aspectRatio)
+    val drawWidth = drawHeight * aspectRatio
+
+    val right = left + drawWidth
+    val bottom = top + drawHeight
+
+    val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = android.graphics.Color.WHITE
+    }
+
+    val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
+        color = android.graphics.Color.BLACK
+    }
+
+    fun zonePaint(zone: Int): Paint {
+        val (made, attempted) = rankingZoneMadeAttempted(session, zone)
+        val percentage = if (attempted > 0) made.toFloat() / attempted.toFloat() else null
+
+        return Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = when {
+                percentage == null -> android.graphics.Color.WHITE
+                percentage < 0.33f -> android.graphics.Color.parseColor("#E53935")
+                percentage <= 0.66f -> android.graphics.Color.parseColor("#FDD835")
+                else -> android.graphics.Color.parseColor("#43A047")
+            }
+        }
+    }
+
+    canvas.drawRect(left, top, right, bottom, backgroundPaint)
+
+    val layers = rankingPdfProZoneLayers(
+        left = left,
+        top = top,
+        width = drawWidth,
+        height = drawHeight
+    )
+
+    layers.forEach { layer ->
+        canvas.drawPath(layer.path, zonePaint(layer.zone))
+    }
+
+    layers.forEach { layer ->
+        canvas.drawPath(layer.path, borderPaint)
+    }
+
+    drawRankingPdfProCourtOverlay(
+        canvas = canvas,
+        left = left,
+        top = top,
+        width = drawWidth,
+        height = drawHeight
+    )
+}
+
+private fun rankingPdfProZoneLayers(
+    left: Float,
+    top: Float,
+    width: Float,
+    height: Float
+): List<RankingPdfProZoneLayer> {
+    val centerX = left + width * 0.5f
+    val centerY = top + height * 0.88f
+
+    val innerRadius = width * 0.23f
+    val lowRadius = width * 0.36f
+    val midRadius = width * 0.52f
+    val outerRadius = width * 0.96f
+
+    val cornerWidth = width * 0.12f
+    val cornerTop = top + height * 0.48f
+
+    return listOf(
+        RankingPdfProZoneLayer(
+            zone = 10,
+            path = AndroidPath().apply {
+                addRect(
+                    RectF(
+                        left,
+                        cornerTop,
+                        left + cornerWidth,
+                        top + height
+                    ),
+                    AndroidPath.Direction.CW
+                )
+            }
+        ),
+        RankingPdfProZoneLayer(
+            zone = 11,
+            path = AndroidPath().apply {
+                addRect(
+                    RectF(
+                        left + width - cornerWidth,
+                        cornerTop,
+                        left + width,
+                        top + height
+                    ),
+                    AndroidPath.Direction.CW
+                )
+            }
+        ),
+
+        RankingPdfProZoneLayer(
+            zone = 1,
+            path = rankingPdfAnnularSectorPath(
+                centerX = centerX,
+                centerY = centerY,
+                innerRadius = midRadius,
+                outerRadius = outerRadius,
+                startAngle = 200f,
+                sweepAngle = 50f
+            )
+        ),
+        RankingPdfProZoneLayer(
+            zone = 2,
+            path = rankingPdfAnnularSectorPath(
+                centerX = centerX,
+                centerY = centerY,
+                innerRadius = midRadius,
+                outerRadius = outerRadius,
+                startAngle = 250f,
+                sweepAngle = 40f
+            )
+        ),
+        RankingPdfProZoneLayer(
+            zone = 3,
+            path = rankingPdfAnnularSectorPath(
+                centerX = centerX,
+                centerY = centerY,
+                innerRadius = midRadius,
+                outerRadius = outerRadius,
+                startAngle = 290f,
+                sweepAngle = 50f
+            )
+        ),
+
+        RankingPdfProZoneLayer(
+            zone = 4,
+            path = rankingPdfAnnularSectorPath(
+                centerX = centerX,
+                centerY = centerY,
+                innerRadius = lowRadius,
+                outerRadius = midRadius,
+                startAngle = 205f,
+                sweepAngle = 65f
+            )
+        ),
+        RankingPdfProZoneLayer(
+            zone = 5,
+            path = rankingPdfAnnularSectorPath(
+                centerX = centerX,
+                centerY = centerY,
+                innerRadius = lowRadius,
+                outerRadius = midRadius,
+                startAngle = 270f,
+                sweepAngle = 65f
+            )
+        ),
+
+        RankingPdfProZoneLayer(
+            zone = 7,
+            path = rankingPdfAnnularSectorPath(
+                centerX = centerX,
+                centerY = centerY,
+                innerRadius = innerRadius,
+                outerRadius = lowRadius,
+                startAngle = 190f,
+                sweepAngle = 55f
+            )
+        ),
+        RankingPdfProZoneLayer(
+            zone = 6,
+            path = rankingPdfAnnularSectorPath(
+                centerX = centerX,
+                centerY = centerY,
+                innerRadius = innerRadius,
+                outerRadius = lowRadius,
+                startAngle = 245f,
+                sweepAngle = 50f
+            )
+        ),
+        RankingPdfProZoneLayer(
+            zone = 9,
+            path = rankingPdfAnnularSectorPath(
+                centerX = centerX,
+                centerY = centerY,
+                innerRadius = innerRadius,
+                outerRadius = lowRadius,
+                startAngle = 295f,
+                sweepAngle = 55f
+            )
+        ),
+
+        RankingPdfProZoneLayer(
+            zone = 8,
+            path = AndroidPath().apply {
+                addOval(
+                    RectF(
+                        centerX - innerRadius,
+                        centerY - innerRadius,
+                        centerX + innerRadius,
+                        centerY + innerRadius
+                    ),
+                    AndroidPath.Direction.CW
+                )
+            }
+        )
+    )
+}
+
+private fun rankingPdfAnnularSectorPath(
+    centerX: Float,
+    centerY: Float,
+    innerRadius: Float,
+    outerRadius: Float,
+    startAngle: Float,
+    sweepAngle: Float
+): AndroidPath {
+    val outerRect = RectF(
+        centerX - outerRadius,
+        centerY - outerRadius,
+        centerX + outerRadius,
+        centerY + outerRadius
+    )
+
+    val innerRect = RectF(
+        centerX - innerRadius,
+        centerY - innerRadius,
+        centerX + innerRadius,
+        centerY + innerRadius
+    )
+
+    return AndroidPath().apply {
+        arcTo(outerRect, startAngle, sweepAngle, true)
+        arcTo(innerRect, startAngle + sweepAngle, -sweepAngle, false)
+        close()
+    }
+}
+
+private fun drawRankingPdfProCourtOverlay(
+    canvas: android.graphics.Canvas,
+    left: Float,
+    top: Float,
+    width: Float,
+    height: Float
+) {
+    val courtPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2.5f
+        color = android.graphics.Color.parseColor("#546E7A")
+    }
+
+    val hoopCenterX = left + width * 0.5f
+    val hoopCenterY = top + height * 0.88f
+
+    val threePointRadius = width * 0.52f
+    val paintLeft = left + width * 0.37f
+    val paintRight = left + width * 0.63f
+    val paintTop = top + height * 0.51f
+    val paintBottom = top + height
+
+    val freeThrowCenterX = left + width * 0.5f
+    val freeThrowCenterY = paintTop
+    val freeThrowRadius = (paintRight - paintLeft) / 2f
+
+    val cornerLineLeftX = left + width * 0.12f
+    val cornerLineRightX = left + width * 0.88f
+    val cornerLineTop = top + height * 0.48f
+
+    canvas.drawArc(
+        RectF(
+            hoopCenterX - threePointRadius,
+            hoopCenterY - threePointRadius,
+            hoopCenterX + threePointRadius,
+            hoopCenterY + threePointRadius
+        ),
+        200f,
+        140f,
+        false,
+        courtPaint
+    )
+
+    canvas.drawLine(
+        cornerLineLeftX,
+        cornerLineTop,
+        cornerLineLeftX,
+        paintBottom,
+        courtPaint
+    )
+
+    canvas.drawLine(
+        cornerLineRightX,
+        cornerLineTop,
+        cornerLineRightX,
+        paintBottom,
+        courtPaint
+    )
+
+    canvas.drawLine(paintLeft, paintTop, paintLeft, paintBottom, courtPaint)
+    canvas.drawLine(paintRight, paintTop, paintRight, paintBottom, courtPaint)
+    canvas.drawLine(paintLeft, paintTop, paintRight, paintTop, courtPaint)
+
+    canvas.drawArc(
+        RectF(
+            freeThrowCenterX - freeThrowRadius,
+            freeThrowCenterY - freeThrowRadius,
+            freeThrowCenterX + freeThrowRadius,
+            freeThrowCenterY + freeThrowRadius
+        ),
+        180f,
+        180f,
+        false,
+        courtPaint
+    )
+
+    val boardY = top + height * 0.93f
+    val boardHalfWidth = width * 0.06f
+    val hoopRadius = width * 0.018f
+    val hoopY = boardY - hoopRadius * 1.8f
+
+    canvas.drawLine(
+        hoopCenterX - boardHalfWidth,
+        boardY,
+        hoopCenterX + boardHalfWidth,
+        boardY,
+        courtPaint
+    )
+
+    canvas.drawCircle(
+        hoopCenterX,
+        hoopY,
+        hoopRadius,
+        courtPaint
     )
 }
 

@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -28,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -42,6 +41,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -78,7 +78,7 @@ fun ShotMapScreen(
     var playersExpanded by remember { mutableStateOf(false) }
     var showDeleteSessionDialog by remember { mutableStateOf(false) }
 
-    var tipusPista by remember(idEquip) { mutableStateOf("Amateur") }
+    var tipusPista by remember(idEquip) { mutableStateOf("FIBA") }
     var screenActive by remember { mutableStateOf(true) }
 
     DisposableEffect(Unit) {
@@ -99,9 +99,9 @@ fun ShotMapScreen(
                 .await()
                 .getString("tipus_pista")
                 ?.takeIf { it.isNotBlank() }
-                ?: "Amateur"
+                ?: "FIBA"
         } catch (_: Exception) {
-            "Amateur"
+            "FIBA"
         }
     }
 
@@ -286,10 +286,11 @@ fun ShotMapScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                key(redrawKey) {
+                key(redrawKey, tipusPista) {
                     CourtMap(
                         session = activeSession,
                         enabled = true,
+                        tipusPista = tipusPista,
                         onZoneTap = { zone ->
                             zoneDialog = zone
                         }
@@ -458,15 +459,14 @@ private fun savedSessionLabel(session: Sessio): String {
 private fun CourtMap(
     session: Sessio?,
     enabled: Boolean,
+    tipusPista: String,
     onZoneTap: (Int) -> Unit
 ) {
-    val aspectRatio = 453f / 339f
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(aspectRatio)
-            .pointerInput(enabled) {
+            .aspectRatio(453f / 339f)
+            .pointerInput(enabled, tipusPista) {
                 if (enabled) {
                     detectTapGestures { offset ->
                         val normalizedX = offset.x / size.width
@@ -477,206 +477,217 @@ private fun CourtMap(
             }
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-
-            val lineColor = Color.Black
-            val strokeWidth = (w * 0.007f).coerceAtLeast(3f)
-            val stroke = Stroke(width = strokeWidth)
-
-            val topSplitY = 0.59f * h
-            val lowerSplitY = 0.69f * h
-
-            val third = w / 3f
-            val paintLeft = third
-            val paintRight = 2f * third
-
-            val bigArcCenter = Offset(w * 0.5f, topSplitY + 0.10f * h)
-            val freeThrowCenter = Offset(w * 0.5f, topSplitY)
-
-            val rThree = 0.42f * w
-            val rFT = (paintRight - paintLeft) / 2f
-
-            val xLeftArc = w * 0.5f - rThree
-            val xRightArc = w * 0.5f + rThree
-
-            val dxPaint = paintLeft - bigArcCenter.x
-            val arcPaintIntersectionY =
-                bigArcCenter.y - sqrt((rThree * rThree) - (dxPaint * dxPaint))
-
-            fun drawZoneFill(zone: Int) {
-                val (made, attempted) = session.zoneMadeAttempted(zone)
-                val percentage = if (attempted > 0) made.toFloat() / attempted.toFloat() else null
-
-                drawPath(
-                    path = zonePath(
-                        zone = zone,
-                        width = w,
-                        height = h,
-                        topSplitY = topSplitY,
-                        lowerSplitY = lowerSplitY,
-                        paintLeft = paintLeft,
-                        paintRight = paintRight,
-                        leftArcX = xLeftArc,
-                        rightArcX = xRightArc,
-                        bigArcCenter = bigArcCenter,
-                        threePointRadius = rThree,
-                        freeThrowCenter = freeThrowCenter,
-                        freeThrowRadius = rFT
-                    ),
-                    color = zoneColor(percentage),
-                    style = Fill
-                )
-            }
-
-            drawRect(Color.White)
-
-            drawZoneFill(1)
-            drawZoneFill(2)
-            drawZoneFill(3)
-            drawZoneFill(10)
-            drawZoneFill(11)
-
-            drawZoneFill(4)
-            drawZoneFill(5)
-            drawZoneFill(7)
-            drawZoneFill(9)
-
-            drawZoneFill(8)
-            drawZoneFill(6)
-
-            drawRect(
-                color = lineColor,
-                topLeft = Offset.Zero,
-                size = Size(w, h),
-                style = stroke
-            )
-
-            drawLine(
-                color = lineColor,
-                start = Offset(third, 0f),
-                end = Offset(third, arcPaintIntersectionY),
-                strokeWidth = strokeWidth
-            )
-            drawLine(
-                color = lineColor,
-                start = Offset(2f * third, 0f),
-                end = Offset(2f * third, arcPaintIntersectionY),
-                strokeWidth = strokeWidth
-            )
-
-            drawArc(
-                color = lineColor,
-                startAngle = 180f,
-                sweepAngle = 180f,
-                useCenter = false,
-                topLeft = Offset(
-                    bigArcCenter.x - rThree,
-                    bigArcCenter.y - rThree
-                ),
-                size = Size(2f * rThree, 2f * rThree),
-                style = stroke
-            )
-
-            drawLine(
-                color = lineColor,
-                start = Offset(w * 0.5f, bigArcCenter.y - rThree),
-                end = Offset(w * 0.5f, freeThrowCenter.y - rFT),
-                strokeWidth = strokeWidth
-            )
-
-            drawArc(
-                color = lineColor,
-                startAngle = 180f,
-                sweepAngle = 180f,
-                useCenter = false,
-                topLeft = Offset(
-                    freeThrowCenter.x - rFT,
-                    freeThrowCenter.y - rFT
-                ),
-                size = Size(2f * rFT, 2f * rFT),
-                style = stroke
-            )
-
-            drawLine(
-                color = lineColor,
-                start = Offset(paintLeft, 0f),
-                end = Offset(paintLeft, arcPaintIntersectionY),
-                strokeWidth = strokeWidth
-            )
-            drawLine(
-                color = lineColor,
-                start = Offset(paintRight, 0f),
-                end = Offset(paintRight, arcPaintIntersectionY),
-                strokeWidth = strokeWidth
-            )
-
-            drawLine(
-                color = lineColor,
-                start = Offset(paintLeft, topSplitY),
-                end = Offset(paintLeft, h),
-                strokeWidth = strokeWidth
-            )
-            drawLine(
-                color = lineColor,
-                start = Offset(paintRight, topSplitY),
-                end = Offset(paintRight, h),
-                strokeWidth = strokeWidth
-            )
-
-            drawLine(
-                color = lineColor,
-                start = Offset(xLeftArc, bigArcCenter.y),
-                end = Offset(xLeftArc, h),
-                strokeWidth = strokeWidth
-            )
-            drawLine(
-                color = lineColor,
-                start = Offset(xRightArc, bigArcCenter.y),
-                end = Offset(xRightArc, h),
-                strokeWidth = strokeWidth
-            )
-
-            drawLine(
-                color = lineColor,
-                start = Offset(paintLeft, topSplitY),
-                end = Offset(paintRight, topSplitY),
-                strokeWidth = strokeWidth
-            )
-
-            drawLine(
-                color = lineColor,
-                start = Offset(0f, lowerSplitY),
-                end = Offset(paintLeft, lowerSplitY),
-                strokeWidth = strokeWidth
-            )
-            drawLine(
-                color = lineColor,
-                start = Offset(paintRight, lowerSplitY),
-                end = Offset(w, lowerSplitY),
-                strokeWidth = strokeWidth
-            )
-
-            val hoopCenterX = w * 0.5f
-            val hoopY = h * 0.93f
-            val hoopLineWidth = w * 0.12f
-            val hoopRadius = w * 0.018f
-
-            drawLine(
-                color = lineColor,
-                start = Offset(hoopCenterX - hoopLineWidth / 2f, hoopY),
-                end = Offset(hoopCenterX + hoopLineWidth / 2f, hoopY),
-                strokeWidth = strokeWidth
-            )
-
-            drawCircle(
-                color = lineColor,
-                radius = hoopRadius,
-                center = Offset(hoopCenterX, hoopY - hoopRadius * 1.8f),
-                style = stroke
+            drawNormalCourtMap(
+                session = session,
+                width = size.width,
+                height = size.height,
+                strokeWidth = (size.width * 0.007f).coerceAtLeast(3f)
             )
         }
     }
+}
+
+private fun DrawScope.drawNormalCourtMap(
+    session: Sessio?,
+    width: Float,
+    height: Float,
+    strokeWidth: Float
+) {
+    val w = width
+    val h = height
+
+    val lineColor = Color.Black
+    val stroke = Stroke(width = strokeWidth)
+
+    val topSplitY = 0.59f * h
+    val lowerSplitY = 0.69f * h
+
+    val third = w / 3f
+    val paintLeft = third
+    val paintRight = 2f * third
+
+    val bigArcCenter = Offset(w * 0.5f, topSplitY + 0.10f * h)
+    val freeThrowCenter = Offset(w * 0.5f, topSplitY)
+
+    val rThree = 0.42f * w
+    val rFT = (paintRight - paintLeft) / 2f
+
+    val xLeftArc = w * 0.5f - rThree
+    val xRightArc = w * 0.5f + rThree
+
+    val dxPaint = paintLeft - bigArcCenter.x
+    val arcPaintIntersectionY =
+        bigArcCenter.y - sqrt((rThree * rThree) - (dxPaint * dxPaint))
+
+    fun drawZoneFill(zone: Int) {
+        val (made, attempted) = session.zoneMadeAttempted(zone)
+        val percentage = if (attempted > 0) made.toFloat() / attempted.toFloat() else null
+
+        drawPath(
+            path = zonePath(
+                zone = zone,
+                width = w,
+                height = h,
+                topSplitY = topSplitY,
+                lowerSplitY = lowerSplitY,
+                paintLeft = paintLeft,
+                paintRight = paintRight,
+                leftArcX = xLeftArc,
+                rightArcX = xRightArc,
+                bigArcCenter = bigArcCenter,
+                threePointRadius = rThree,
+                freeThrowCenter = freeThrowCenter,
+                freeThrowRadius = rFT
+            ),
+            color = zoneColor(percentage),
+            style = Fill
+        )
+    }
+
+    drawRect(Color.White)
+
+    drawZoneFill(1)
+    drawZoneFill(2)
+    drawZoneFill(3)
+    drawZoneFill(10)
+    drawZoneFill(11)
+    drawZoneFill(4)
+    drawZoneFill(5)
+    drawZoneFill(7)
+    drawZoneFill(9)
+    drawZoneFill(8)
+    drawZoneFill(6)
+
+    drawRect(
+        color = lineColor,
+        topLeft = Offset.Zero,
+        size = Size(w, h),
+        style = stroke
+    )
+
+    drawLine(
+        color = lineColor,
+        start = Offset(third, 0f),
+        end = Offset(third, arcPaintIntersectionY),
+        strokeWidth = strokeWidth
+    )
+    drawLine(
+        color = lineColor,
+        start = Offset(2f * third, 0f),
+        end = Offset(2f * third, arcPaintIntersectionY),
+        strokeWidth = strokeWidth
+    )
+
+    drawArc(
+        color = lineColor,
+        startAngle = 180f,
+        sweepAngle = 180f,
+        useCenter = false,
+        topLeft = Offset(
+            bigArcCenter.x - rThree,
+            bigArcCenter.y - rThree
+        ),
+        size = Size(2f * rThree, 2f * rThree),
+        style = stroke
+    )
+
+    drawLine(
+        color = lineColor,
+        start = Offset(w * 0.5f, bigArcCenter.y - rThree),
+        end = Offset(w * 0.5f, freeThrowCenter.y - rFT),
+        strokeWidth = strokeWidth
+    )
+
+    drawArc(
+        color = lineColor,
+        startAngle = 180f,
+        sweepAngle = 180f,
+        useCenter = false,
+        topLeft = Offset(
+            freeThrowCenter.x - rFT,
+            freeThrowCenter.y - rFT
+        ),
+        size = Size(2f * rFT, 2f * rFT),
+        style = stroke
+    )
+
+    drawLine(
+        color = lineColor,
+        start = Offset(paintLeft, 0f),
+        end = Offset(paintLeft, arcPaintIntersectionY),
+        strokeWidth = strokeWidth
+    )
+    drawLine(
+        color = lineColor,
+        start = Offset(paintRight, 0f),
+        end = Offset(paintRight, arcPaintIntersectionY),
+        strokeWidth = strokeWidth
+    )
+
+    drawLine(
+        color = lineColor,
+        start = Offset(paintLeft, topSplitY),
+        end = Offset(paintLeft, h),
+        strokeWidth = strokeWidth
+    )
+    drawLine(
+        color = lineColor,
+        start = Offset(paintRight, topSplitY),
+        end = Offset(paintRight, h),
+        strokeWidth = strokeWidth
+    )
+
+    drawLine(
+        color = lineColor,
+        start = Offset(xLeftArc, bigArcCenter.y),
+        end = Offset(xLeftArc, h),
+        strokeWidth = strokeWidth
+    )
+    drawLine(
+        color = lineColor,
+        start = Offset(xRightArc, bigArcCenter.y),
+        end = Offset(xRightArc, h),
+        strokeWidth = strokeWidth
+    )
+
+    drawLine(
+        color = lineColor,
+        start = Offset(paintLeft, topSplitY),
+        end = Offset(paintRight, topSplitY),
+        strokeWidth = strokeWidth
+    )
+
+    drawLine(
+        color = lineColor,
+        start = Offset(0f, lowerSplitY),
+        end = Offset(paintLeft, lowerSplitY),
+        strokeWidth = strokeWidth
+    )
+    drawLine(
+        color = lineColor,
+        start = Offset(paintRight, lowerSplitY),
+        end = Offset(w, lowerSplitY),
+        strokeWidth = strokeWidth
+    )
+
+    val hoopCenterX = w * 0.5f
+    val hoopY = h * 0.93f
+    val hoopLineWidth = w * 0.12f
+    val hoopRadius = w * 0.018f
+
+    drawLine(
+        color = lineColor,
+        start = Offset(hoopCenterX - hoopLineWidth / 2f, hoopY),
+        end = Offset(hoopCenterX + hoopLineWidth / 2f, hoopY),
+        strokeWidth = strokeWidth
+    )
+
+    drawCircle(
+        color = lineColor,
+        radius = hoopRadius,
+        center = Offset(hoopCenterX, hoopY - hoopRadius * 1.8f),
+        style = stroke
+    )
 }
 
 private fun Sessio?.zoneMadeAttempted(zone: Int): Pair<Int, Int> {

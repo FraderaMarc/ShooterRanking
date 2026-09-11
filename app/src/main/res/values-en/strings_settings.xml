@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <string name="settings_description">
+        Manage your Shooter Ranking preferences and account.
+    </string>
+
+    <string name="settings_general_section">
+        General
+    </string>
+
+    <string name="settings_language_description">
+        Change the language used by the application.
+    </string>
+
+    <string name="settings_legal_description">
+        Review the privacy policy and terms and conditions.
+    </string>
+
+    <string name="settings_account_section">
+        Account
+    </string>
+
+    <string name="settings_current_account">
+        Current account
+    </string>
+
+    <string name="settings_no_email">
+        Email unavailable
+    </string>
+
+    <string name="settings_danger_section">
+        Account management
+    </string>
+
+    <string name="delete_account">
+        Delete account
+    </string>
+
+    <string name="delete_account_description">
+        Permanently delete your Shooter Ranking account and the data associated with it.
+    </string>
+
+    <string name="delete_account_email_note">
+        For security, we will first send an email to your verified address. Your account will not be deleted until you confirm the request from that email.
+    </string>
+
+    <string name="delete_account_confirm_title">
+        Request account deletion?
+    </string>
+
+    <string name="delete_account_confirm_message">
+        We will send you an email containing a secure link. Opening the link will not automatically delete your account: you will have to confirm the deletion one last time on the confirmation page.
+    </string>
+
+    <string name="delete_account_send_email">
+        Send email
+    </string>
+
+    <string name="delete_account_email_sent_title">
+        Check your email
+    </string>
+
+    <string name="delete_account_email_sent_message">
+        We sent a confirmation email to %1$s. The link expires in 30 minutes. Your account will remain active until you confirm the deletion.
+    </string>
+
+    <string name="account_delete_email_must_be_verified">
+        Your email address must be verified before you can delete your account.
+    </string>
+
+    <string name="account_delete_request_failed">
+        We could not send the deletion email. Check your connection and try again.
+    </string>
+
+</resources>

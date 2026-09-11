@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <string name="settings_description">
+        Gérez les préférences et le compte Shooter Ranking.
+    </string>
+
+    <string name="settings_general_section">
+        Général
+    </string>
+
+    <string name="settings_language_description">
+        Modifier la langue utilisée par l’application.
+    </string>
+
+    <string name="settings_legal_description">
+        Consulter la politique de confidentialité et les conditions générales.
+    </string>
+
+    <string name="settings_account_section">
+        Compte
+    </string>
+
+    <string name="settings_current_account">
+        Compte actuel
+    </string>
+
+    <string name="settings_no_email">
+        E-mail indisponible
+    </string>
+
+    <string name="settings_danger_section">
+        Gestion du compte
+    </string>
+
+    <string name="delete_account">
+        Supprimer le compte
+    </string>
+
+    <string name="delete_account_description">
+        Supprime définitivement votre compte Shooter Ranking et les données qui lui sont associées.
+    </string>
+
+    <string name="delete_account_email_note">
+        Pour des raisons de sécurité, nous enverrons d’abord un e-mail à votre adresse vérifiée. Le compte ne sera pas supprimé tant que vous n’aurez pas confirmé la demande depuis cet e-mail.
+    </string>
+
+    <string name="delete_account_confirm_title">
+        Demander la suppression du compte ?
+    </string>
+
+    <string name="delete_account_confirm_message">
+        Nous vous enverrons un e-mail contenant un lien sécurisé. L’ouverture du lien ne supprimera pas automatiquement votre compte : vous devrez confirmer une dernière fois la suppression sur la page de confirmation.
+    </string>
+
+    <string name="delete_account_send_email">
+        Envoyer l’e-mail
+    </string>
+
+    <string name="delete_account_email_sent_title">
+        Consultez votre e-mail
+    </string>
+
+    <string name="delete_account_email_sent_message">
+        Nous avons envoyé un e-mail de confirmation à %1$s. Le lien expire dans 30 minutes. Votre compte restera actif jusqu’à la confirmation de la suppression.
+    </string>
+
+    <string name="account_delete_email_must_be_verified">
+        Votre adresse e-mail doit être vérifiée avant de pouvoir supprimer votre compte.
+    </string>
+
+    <string name="account_delete_request_failed">
+        Impossible d’envoyer l’e-mail de suppression. Vérifiez votre connexion et réessayez.
+    </string>
+
+</resources>

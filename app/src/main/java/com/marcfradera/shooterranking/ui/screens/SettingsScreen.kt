@@ -1,6 +1,7 @@
 package com.marcfradera.shooterranking.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -27,11 +29,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.marcfradera.shooterranking.R
+import com.marcfradera.shooterranking.localization.AppLanguageManager
 
 @Composable
 fun SettingsScreen(
@@ -51,6 +58,41 @@ fun SettingsScreen(
             by remember {
                 mutableStateOf(false)
             }
+
+    val context =
+        LocalContext.current
+
+    val currentLanguageTag =
+        AppLanguageManager
+            .currentLanguageTag(
+                context
+            )
+
+    val currentLanguageName =
+        when (
+            currentLanguageTag
+        ) {
+
+            "ca" ->
+                stringResource(
+                    R.string.language_catalan
+                )
+
+            "en" ->
+                stringResource(
+                    R.string.language_english
+                )
+
+            "fr" ->
+                stringResource(
+                    R.string.language_french
+                )
+
+            else ->
+                stringResource(
+                    R.string.language_spanish
+                )
+        }
 
     CenteredScaffold(
         title =
@@ -123,6 +165,59 @@ fun SettingsScreen(
 
             enabled =
                 !loading,
+
+            trailingContent = {
+
+                Row(
+                    verticalAlignment =
+                        Alignment.CenterVertically,
+
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+
+                    Text(
+                        text =
+                            currentLanguageName,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodyMedium,
+
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .primary,
+
+                        fontWeight =
+                            FontWeight
+                                .SemiBold
+                    )
+
+                    SettingsLanguageFlag(
+                        languageTag =
+                            currentLanguageTag
+                    )
+
+                    Text(
+                        text =
+                            "›",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .headlineSmall,
+
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .primary
+                    )
+                }
+            },
 
             onClick =
                 onChangeLanguage
@@ -303,23 +398,7 @@ fun SettingsScreen(
                 )
         )
 
-        SettingsSectionTitle(
-            text =
-                stringResource(
-                    R.string
-                        .settings_danger_section
-                ),
 
-            error =
-                true
-        )
-
-        Spacer(
-            modifier =
-                Modifier.height(
-                    10.dp
-                )
-        )
 
         Surface(
             modifier =
@@ -753,6 +832,9 @@ private fun SettingsOptionCard(
     title: String,
     description: String,
     enabled: Boolean,
+    trailingContent:
+    (@Composable () -> Unit)? =
+        null,
     onClick: () -> Unit
 ) {
 
@@ -801,7 +883,14 @@ private fun SettingsOptionCard(
                         .fillMaxWidth()
                         .padding(
                             end =
-                                36.dp
+                                if (
+                                    trailingContent !=
+                                    null
+                                ) {
+                                    150.dp
+                                } else {
+                                    36.dp
+                                }
                         )
             ) {
 
@@ -847,25 +936,376 @@ private fun SettingsOptionCard(
                 )
             }
 
-            Text(
-                text =
-                    "›",
-
+            Box(
                 modifier =
                     Modifier.align(
                         Alignment.CenterEnd
                     ),
 
-                style =
-                    MaterialTheme
-                        .typography
-                        .headlineSmall,
+                contentAlignment =
+                    Alignment.Center
+            ) {
 
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .primary
-            )
+                if (
+                    trailingContent !=
+                    null
+                ) {
+
+                    trailingContent()
+
+                } else {
+
+                    Text(
+                        text =
+                            "›",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .headlineSmall,
+
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .primary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsLanguageFlag(
+    languageTag: String
+) {
+
+    Canvas(
+        modifier =
+            Modifier
+                .width(
+                    30.dp
+                )
+                .height(
+                    20.dp
+                )
+    ) {
+
+        when (
+            languageTag
+        ) {
+
+            "ca" -> {
+
+                drawRect(
+                    color =
+                        Color(
+                            0xFFFFD54F
+                        )
+                )
+
+                val stripeHeight =
+                    size.height /
+                            9f
+
+                listOf(
+                    1,
+                    3,
+                    5,
+                    7
+                ).forEach {
+                        stripe ->
+
+                    drawRect(
+                        color =
+                            Color(
+                                0xFFD32F2F
+                            ),
+
+                        topLeft =
+                            Offset(
+                                0f,
+                                stripeHeight *
+                                        stripe
+                            ),
+
+                        size =
+                            Size(
+                                size.width,
+                                stripeHeight
+                            )
+                    )
+                }
+            }
+
+            "en" -> {
+
+                val blue =
+                    Color(
+                        0xFF012169
+                    )
+
+                val white =
+                    Color.White
+
+                val red =
+                    Color(
+                        0xFFC8102E
+                    )
+
+                drawRect(
+                    color =
+                        blue
+                )
+
+                drawLine(
+                    color =
+                        white,
+
+                    start =
+                        Offset(
+                            0f,
+                            0f
+                        ),
+
+                    end =
+                        Offset(
+                            size.width,
+                            size.height
+                        ),
+
+                    strokeWidth =
+                        size.height *
+                                0.20f
+                )
+
+                drawLine(
+                    color =
+                        white,
+
+                    start =
+                        Offset(
+                            size.width,
+                            0f
+                        ),
+
+                    end =
+                        Offset(
+                            0f,
+                            size.height
+                        ),
+
+                    strokeWidth =
+                        size.height *
+                                0.20f
+                )
+
+                drawLine(
+                    color =
+                        red,
+
+                    start =
+                        Offset(
+                            0f,
+                            0f
+                        ),
+
+                    end =
+                        Offset(
+                            size.width,
+                            size.height
+                        ),
+
+                    strokeWidth =
+                        size.height *
+                                0.09f
+                )
+
+                drawLine(
+                    color =
+                        red,
+
+                    start =
+                        Offset(
+                            size.width,
+                            0f
+                        ),
+
+                    end =
+                        Offset(
+                            0f,
+                            size.height
+                        ),
+
+                    strokeWidth =
+                        size.height *
+                                0.09f
+                )
+
+                drawRect(
+                    color =
+                        white,
+
+                    topLeft =
+                        Offset(
+                            size.width *
+                                    0.40f,
+                            0f
+                        ),
+
+                    size =
+                        Size(
+                            size.width *
+                                    0.20f,
+                            size.height
+                        )
+                )
+
+                drawRect(
+                    color =
+                        white,
+
+                    topLeft =
+                        Offset(
+                            0f,
+                            size.height *
+                                    0.34f
+                        ),
+
+                    size =
+                        Size(
+                            size.width,
+                            size.height *
+                                    0.32f
+                        )
+                )
+
+                drawRect(
+                    color =
+                        red,
+
+                    topLeft =
+                        Offset(
+                            size.width *
+                                    0.455f,
+                            0f
+                        ),
+
+                    size =
+                        Size(
+                            size.width *
+                                    0.09f,
+                            size.height
+                        )
+                )
+
+                drawRect(
+                    color =
+                        red,
+
+                    topLeft =
+                        Offset(
+                            0f,
+                            size.height *
+                                    0.42f
+                        ),
+
+                    size =
+                        Size(
+                            size.width,
+                            size.height *
+                                    0.16f
+                        )
+                )
+            }
+
+            "fr" -> {
+
+                val third =
+                    size.width /
+                            3f
+
+                drawRect(
+                    color =
+                        Color(
+                            0xFF0055A4
+                        ),
+
+                    size =
+                        Size(
+                            third,
+                            size.height
+                        )
+                )
+
+                drawRect(
+                    color =
+                        Color.White,
+
+                    topLeft =
+                        Offset(
+                            third,
+                            0f
+                        ),
+
+                    size =
+                        Size(
+                            third,
+                            size.height
+                        )
+                )
+
+                drawRect(
+                    color =
+                        Color(
+                            0xFFEF4135
+                        ),
+
+                    topLeft =
+                        Offset(
+                            third *
+                                    2f,
+                            0f
+                        ),
+
+                    size =
+                        Size(
+                            third,
+                            size.height
+                        )
+                )
+            }
+
+            else -> {
+
+                drawRect(
+                    color =
+                        Color(
+                            0xFFAA151B
+                        )
+                )
+
+                drawRect(
+                    color =
+                        Color(
+                            0xFFF1BF00
+                        ),
+
+                    topLeft =
+                        Offset(
+                            0f,
+                            size.height *
+                                    0.25f
+                        ),
+
+                    size =
+                        Size(
+                            size.width,
+                            size.height *
+                                    0.50f
+                        )
+                )
+            }
         }
     }
 }

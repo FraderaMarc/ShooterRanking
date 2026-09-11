@@ -112,17 +112,16 @@ private data class TeamExportRow(
 }
 
 private data class TeamExportBestValues(
-    val sessions: Int,
-    val tlMade: Int,
-    val tlPct: Float?,
-    val t2Made: Int,
-    val t2Pct: Float?,
-    val t3Made: Int,
-    val t3Pct: Float?,
-    val totalMade: Int,
-    val totalPct: Float?,
-    val rightPct: Float?,
-    val leftPct: Float?
+    val tlMade: TeamExportRow?,
+    val tlPct: TeamExportRow?,
+    val t2Made: TeamExportRow?,
+    val t2Pct: TeamExportRow?,
+    val t3Made: TeamExportRow?,
+    val t3Pct: TeamExportRow?,
+    val totalMade: TeamExportRow?,
+    val totalPct: TeamExportRow?,
+    val rightPct: TeamExportRow?,
+    val leftPct: TeamExportRow?
 )
 
 private data class RankingPdfColumn(
@@ -940,21 +939,130 @@ private fun buildTeamTotalRow(
     )
 }
 
-private fun buildTeamExportBestValues(rows: List<TeamExportRow>): TeamExportBestValues {
-    val regularRows = rows.filterNot { it.isTotalRow }
+private fun buildTeamExportBestValues(
+    rows: List<TeamExportRow>
+): TeamExportBestValues {
+
+    /*
+     * IMPORTANTE:
+     *
+     * "rows" ya llega ordenado según la clasificación general:
+     *
+     * 1. Mayor % total.
+     * 2. Mayor número de tiros anotados.
+     * 3. Nombre del jugador.
+     *
+     * Por tanto, cuando dos o más jugadores empatan en una
+     * estadística, firstOrNull() selecciona automáticamente
+     * al jugador situado más arriba en la clasificación general.
+     */
+
+    val regularRows =
+        rows.filterNot {
+            it.isTotalRow
+        }
+
+    fun bestPositiveIntRow(
+        selector:
+            (TeamExportRow) -> Int
+    ): TeamExportRow? {
+
+        val maxValue =
+            regularRows
+                .maxOfOrNull(
+                    selector
+                )
+                ?: return null
+
+        /*
+         * Conservamos el comportamiento anterior:
+         * si todo el equipo tiene 0 en una estadística de
+         * anotaciones, no destacamos a nadie.
+         */
+        if (
+            maxValue <= 0
+        ) {
+            return null
+        }
+
+        return regularRows
+            .firstOrNull {
+                selector(it) ==
+                        maxValue
+            }
+    }
+
+    fun bestPercentageRow(
+        selector:
+            (TeamExportRow) -> Float?
+    ): TeamExportRow? {
+
+        val maxValue =
+            regularRows
+                .mapNotNull(
+                    selector
+                )
+                .maxOrNull()
+                ?: return null
+
+        return regularRows
+            .firstOrNull {
+                selector(it) ==
+                        maxValue
+            }
+    }
 
     return TeamExportBestValues(
-        sessions = regularRows.maxOfOrNull { it.sessions } ?: 0,
-        tlMade = regularRows.maxOfOrNull { it.tlMade } ?: 0,
-        tlPct = regularRows.mapNotNull { it.tlPct }.maxOrNull(),
-        t2Made = regularRows.maxOfOrNull { it.t2Made } ?: 0,
-        t2Pct = regularRows.mapNotNull { it.t2Pct }.maxOrNull(),
-        t3Made = regularRows.maxOfOrNull { it.t3Made } ?: 0,
-        t3Pct = regularRows.mapNotNull { it.t3Pct }.maxOrNull(),
-        totalMade = regularRows.maxOfOrNull { it.totalMade } ?: 0,
-        totalPct = regularRows.mapNotNull { it.totalPct }.maxOrNull(),
-        rightPct = regularRows.mapNotNull { it.rightPct }.maxOrNull(),
-        leftPct = regularRows.mapNotNull { it.leftPct }.maxOrNull()
+
+        tlMade =
+            bestPositiveIntRow {
+                it.tlMade
+            },
+
+        tlPct =
+            bestPercentageRow {
+                it.tlPct
+            },
+
+        t2Made =
+            bestPositiveIntRow {
+                it.t2Made
+            },
+
+        t2Pct =
+            bestPercentageRow {
+                it.t2Pct
+            },
+
+        t3Made =
+            bestPositiveIntRow {
+                it.t3Made
+            },
+
+        t3Pct =
+            bestPercentageRow {
+                it.t3Pct
+            },
+
+        totalMade =
+            bestPositiveIntRow {
+                it.totalMade
+            },
+
+        totalPct =
+            bestPercentageRow {
+                it.totalPct
+            },
+
+        rightPct =
+            bestPercentageRow {
+                it.rightPct
+            },
+
+        leftPct =
+            bestPercentageRow {
+                it.leftPct
+            }
     )
 }
 
@@ -1491,72 +1599,252 @@ private fun drawTeamExportRow(
     rowHeight: Float,
     textSize: Float
 ) {
-    val backgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.FILL
-    }
-    val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 1.2f
-        color = android.graphics.Color.parseColor("#8A8A8A")
-    }
-    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.textSize = textSize
-        color = android.graphics.Color.BLACK
-        isFakeBoldText = row.isTotalRow
-    }
 
-    val values = listOf(
-        row.label,
-        row.sessions.toString(),
-        "${row.tlMade}/${row.tlAttempted}",
-        row.tlPct.toRankingPdfPercent(),
-        "${row.t2Made}/${row.t2Attempted}",
-        row.t2Pct.toRankingPdfPercent(),
-        "${row.t3Made}/${row.t3Attempted}",
-        row.t3Pct.toRankingPdfPercent(),
-        "${row.totalMade}/${row.totalAttempted}",
-        row.totalPct.toRankingPdfPercent(),
-        row.rightPct.toRankingPdfPercent(),
-        row.leftPct.toRankingPdfPercent(),
-        row.bestSide,
-        row.bestZoneT2,
-        row.bestZoneT3
-    )
+    val backgroundPaint =
+        Paint(
+            Paint.ANTI_ALIAS_FLAG
+        ).apply {
 
-    var x = startX
+            style =
+                Paint.Style.FILL
+        }
 
-    values.forEachIndexed { index, value ->
-        val highlight = if (row.isTotalRow) {
-            false
-        } else {
-            when (index) {
-                1 -> bestValues.sessions > 0 && row.sessions == bestValues.sessions
-                2 -> bestValues.tlMade > 0 && row.tlMade == bestValues.tlMade
-                3 -> bestValues.tlPct != null && row.tlPct != null && row.tlPct == bestValues.tlPct
-                4 -> bestValues.t2Made > 0 && row.t2Made == bestValues.t2Made
-                5 -> bestValues.t2Pct != null && row.t2Pct != null && row.t2Pct == bestValues.t2Pct
-                6 -> bestValues.t3Made > 0 && row.t3Made == bestValues.t3Made
-                7 -> bestValues.t3Pct != null && row.t3Pct != null && row.t3Pct == bestValues.t3Pct
-                8 -> bestValues.totalMade > 0 && row.totalMade == bestValues.totalMade
-                9 -> bestValues.totalPct != null && row.totalPct != null && row.totalPct == bestValues.totalPct
-                10 -> bestValues.rightPct != null && row.rightPct != null && row.rightPct == bestValues.rightPct
-                11 -> bestValues.leftPct != null && row.leftPct != null && row.leftPct == bestValues.leftPct
-                else -> false
+    val borderPaint =
+        Paint(
+            Paint.ANTI_ALIAS_FLAG
+        ).apply {
+
+            style =
+                Paint.Style.STROKE
+
+            strokeWidth =
+                1.2f
+
+            color =
+                android.graphics.Color
+                    .parseColor(
+                        "#8A8A8A"
+                    )
+        }
+
+    val textPaint =
+        Paint(
+            Paint.ANTI_ALIAS_FLAG
+        ).apply {
+
+            this.textSize =
+                textSize
+
+            color =
+                android.graphics.Color.BLACK
+
+            isFakeBoldText =
+                row.isTotalRow
+        }
+
+    val values =
+        listOf(
+            row.label,
+
+            row.sessions
+                .toString(),
+
+            "${row.tlMade}/${row.tlAttempted}",
+
+            row.tlPct
+                .toRankingPdfPercent(),
+
+            "${row.t2Made}/${row.t2Attempted}",
+
+            row.t2Pct
+                .toRankingPdfPercent(),
+
+            "${row.t3Made}/${row.t3Attempted}",
+
+            row.t3Pct
+                .toRankingPdfPercent(),
+
+            "${row.totalMade}/${row.totalAttempted}",
+
+            row.totalPct
+                .toRankingPdfPercent(),
+
+            row.rightPct
+                .toRankingPdfPercent(),
+
+            row.leftPct
+                .toRankingPdfPercent(),
+
+            row.bestSide,
+
+            row.bestZoneT2,
+
+            row.bestZoneT3
+        )
+
+    var x =
+        startX
+
+    values.forEachIndexed {
+            index,
+            value ->
+
+        /*
+         * La fila TOTAL EQUIPO nunca se destaca.
+         *
+         * La columna 1 corresponde a SESIONES y tampoco
+         * se destaca nunca.
+         *
+         * Para el resto de columnas configuradas usamos
+         * identidad de la fila (===). buildTeamExportBestValues()
+         * ya ha elegido exactamente una fila ganadora por
+         * estadística, resolviendo empates mediante el orden
+         * de la clasificación general.
+         */
+        val highlight =
+            if (
+                row.isTotalRow
+            ) {
+
+                false
+
+            } else {
+
+                when (
+                    index
+                ) {
+
+                    /*
+                     * 0 = Jugador
+                     * 1 = Sesiones
+                     *
+                     * Ninguna de estas dos se marca.
+                     */
+                    0 ->
+                        false
+
+                    1 ->
+                        false
+
+                    /*
+                     * TL
+                     */
+                    2 ->
+                        row ===
+                                bestValues.tlMade
+
+                    3 ->
+                        row ===
+                                bestValues.tlPct
+
+                    /*
+                     * T2
+                     */
+                    4 ->
+                        row ===
+                                bestValues.t2Made
+
+                    5 ->
+                        row ===
+                                bestValues.t2Pct
+
+                    /*
+                     * T3
+                     */
+                    6 ->
+                        row ===
+                                bestValues.t3Made
+
+                    7 ->
+                        row ===
+                                bestValues.t3Pct
+
+                    /*
+                     * TOTAL
+                     */
+                    8 ->
+                        row ===
+                                bestValues.totalMade
+
+                    9 ->
+                        row ===
+                                bestValues.totalPct
+
+                    /*
+                     * Derecha / izquierda.
+                     */
+                    10 ->
+                        row ===
+                                bestValues.rightPct
+
+                    11 ->
+                        row ===
+                                bestValues.leftPct
+
+                    /*
+                     * Mejor lado y mejores zonas siguen sin
+                     * destacar, exactamente como antes.
+                     */
+                    else ->
+                        false
+                }
             }
-        }
 
-        backgroundPaint.color = when {
-            row.isTotalRow -> android.graphics.Color.parseColor("#F0F7FF")
-            highlight -> android.graphics.Color.parseColor("#DFF3E3")
-            else -> android.graphics.Color.WHITE
-        }
+        backgroundPaint.color =
+            when {
 
-        val rect = RectF(x, startY, x + columns[index].width, startY + rowHeight)
-        canvas.drawRect(rect, backgroundPaint)
-        canvas.drawRect(rect, borderPaint)
-        drawRankingPdfTextFitted(canvas, value, rect, textPaint)
+                row.isTotalRow ->
+                    android.graphics.Color
+                        .parseColor(
+                            "#F0F7FF"
+                        )
 
-        x += columns[index].width
+                highlight ->
+                    android.graphics.Color
+                        .parseColor(
+                            "#DFF3E3"
+                        )
+
+                else ->
+                    android.graphics.Color.WHITE
+            }
+
+        val rect =
+            RectF(
+                x,
+                startY,
+                x +
+                        columns[index].width,
+                startY +
+                        rowHeight
+            )
+
+        canvas.drawRect(
+            rect,
+            backgroundPaint
+        )
+
+        canvas.drawRect(
+            rect,
+            borderPaint
+        )
+
+        drawRankingPdfTextFitted(
+            canvas =
+                canvas,
+
+            text =
+                value,
+
+            rect =
+                rect,
+
+            paint =
+                textPaint
+        )
+
+        x +=
+            columns[index].width
     }
 }
 

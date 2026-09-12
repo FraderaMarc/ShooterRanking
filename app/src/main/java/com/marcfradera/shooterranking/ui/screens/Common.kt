@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -49,6 +50,25 @@ fun CenteredScaffold(
     Scaffold(
         containerColor =
             MaterialTheme.colorScheme.background,
+
+        /*
+         * La Activity ya gestiona el espacio inferior necesario
+         * para el banner AdMob y para la navegación del sistema.
+         *
+         * Si Scaffold aplica además sus insets por defecto,
+         * se reserva otra vez el inset inferior y aparece una
+         * franja vacía encima del anuncio.
+         *
+         * TopAppBar conserva sus propios windowInsets, por lo que
+         * la barra de estado superior sigue protegida.
+         */
+        contentWindowInsets =
+            WindowInsets(
+                left = 0,
+                top = 0,
+                right = 0,
+                bottom = 0
+            ),
 
         topBar = {
 

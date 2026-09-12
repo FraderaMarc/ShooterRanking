@@ -1,7 +1,7 @@
 package com.marcfradera.shooterranking.ui.screens
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -42,19 +42,13 @@ fun HomeScreen(
         showSettings = true
     ) {
 
-        Column(
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(
                         vertical = 12.dp
-                    ),
-
-            horizontalAlignment =
-                Alignment.CenterHorizontally,
-
-            verticalArrangement =
-                Arrangement.Center
+                    )
         ) {
 
             Image(
@@ -78,87 +72,96 @@ fun HomeScreen(
                             RoundedCornerShape(
                                 20.dp
                             )
+                        )
+                        .align(
+                            Alignment.TopCenter
                         ),
 
                 contentScale =
                     ContentScale.Crop
             )
 
-            Spacer(
-                modifier =
-                    Modifier.height(
-                        24.dp
-                    )
-            )
-
-            Text(
-                text =
-                    stringResource(
-                        R.string.home_choose_mode
-                    ),
-
-                style =
-                    MaterialTheme
-                        .typography
-                        .titleMedium,
-
-                fontWeight =
-                    FontWeight.SemiBold,
-
-                textAlign =
-                    TextAlign.Center
-            )
-
-            Spacer(
-                modifier =
-                    Modifier.height(
-                        18.dp
-                    )
-            )
-
-            Button(
-                onClick = onCoach,
-
+            Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(
-                            58.dp
-                        )
+                        .align(
+                            Alignment.Center
+                        ),
+
+                horizontalAlignment =
+                    Alignment.CenterHorizontally
             ) {
 
                 Text(
                     text =
                         stringResource(
-                            R.string.home_coach
+                            R.string.home_choose_mode
+                        ),
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleMedium,
+
+                    fontWeight =
+                        FontWeight.SemiBold,
+
+                    textAlign =
+                        TextAlign.Center
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            18.dp
                         )
                 )
-            }
 
-            Spacer(
-                modifier =
-                    Modifier.height(
-                        12.dp
+                Button(
+                    onClick = onCoach,
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(
+                                58.dp
+                            )
+                ) {
+
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_coach
+                            )
                     )
-            )
+                }
 
-            Button(
-                onClick = onPlayer,
-
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(
-                            58.dp
-                        )
-            ) {
-
-                Text(
-                    text =
-                        stringResource(
-                            R.string.home_player
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            12.dp
                         )
                 )
+
+                Button(
+                    onClick = onPlayer,
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(
+                                58.dp
+                            )
+                ) {
+
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.home_player
+                            )
+                    )
+                }
             }
         }
     }

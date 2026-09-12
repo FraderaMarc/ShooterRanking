@@ -8,58 +8,70 @@
     android:orientation="vertical"
     android:background="@color/sr_background">
 
-    <LinearLayout
+    <!--
+        La barra de estado se añade dinámicamente según el dispositivo.
+        Debajo queda una TopAppBar visual de 64dp, igual que la usada
+        por Material 3 en Estadísticas.
+    -->
+    <com.marcfradera.shooterranking.ui.views.StatusBarInsetLinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="@color/sr_surface"
-        android:paddingStart="16dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="12dp">
+        android:orientation="vertical"
+        android:background="@color/sr_surface">
 
-        <androidx.appcompat.widget.AppCompatImageButton
-            android:id="@+id/backButton"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:gravity="center"
-            android:padding="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="@string/back"
-            android:scaleType="centerInside"
-            app:srcCompat="@drawable/ic_back_sr"
-            app:tint="@color/sr_text" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp">
 
-        <TextView
-            android:id="@+id/titleText"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:paddingStart="8dp"
-            android:textColor="@color/sr_text"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/backButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/back"
+                android:scaleType="centerInside"
+                app:srcCompat="@drawable/ic_back_sr"
+                app:tint="@color/sr_text" />
 
-        <!--
-            Se mantiene el View en el binding para no romper
-            TemporadesFragment ni EquipsFragment, pero permanece
-            oculto. La configuración solo se muestra en HomeScreen.
-        -->
-        <androidx.appcompat.widget.AppCompatImageButton
-            android:id="@+id/settingsButton"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone"
-            android:clickable="false"
-            android:focusable="false"
-            android:contentDescription="@string/settings"
-            app:srcCompat="@drawable/ic_settings_sr"
-            app:tint="@color/sr_text" />
+            <com.marcfradera.shooterranking.ui.views.StatsStyleTitleTextView
+                android:id="@+id/titleText"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:paddingStart="4dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/sr_text"
+                android:textSize="22sp"
+                android:textStyle="normal" />
 
-    </LinearLayout>
+            <!--
+                Se conserva en el binding para no modificar ninguna
+                funcionalidad existente de Temporadas o Equipos.
+            -->
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/settingsButton"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone"
+                android:clickable="false"
+                android:focusable="false"
+                android:contentDescription="@string/settings"
+                app:srcCompat="@drawable/ic_settings_sr"
+                app:tint="@color/sr_text" />
+
+        </LinearLayout>
+
+    </com.marcfradera.shooterranking.ui.views.StatusBarInsetLinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"

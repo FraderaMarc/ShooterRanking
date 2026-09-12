@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -44,13 +45,17 @@ fun WelcomeScreenCustom(
             /*
              * Language selector belongs to the first screen shown by the app,
              * not to LoginScreen. It is deliberately small and discreet.
+             *
+             * statusBarsPadding() keeps it below the real status bar on every
+             * device, including edge-to-edge layouts.
              */
             CompactLanguageFlagSelector(
                 modifier = Modifier
                     .align(Alignment.TopStart)
+                    .statusBarsPadding()
                     .padding(
                         start = 14.dp,
-                        top = 14.dp
+                        top = 8.dp
                     )
             )
 

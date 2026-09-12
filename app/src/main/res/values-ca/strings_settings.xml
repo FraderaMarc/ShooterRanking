@@ -42,36 +42,36 @@
         Elimina permanentment el teu compte de Shooter Ranking i les dades associades.
     </string>
 
-    <string name="delete_account_email_note">
-        Per seguretat, primer enviarem un correu a la teva adreça verificada. El compte no s’eliminarà fins que confirmis la sol·licitud des d’aquest correu.
+    <string name="delete_account_password_note">
+        Per seguretat, hauràs d’introduir la contrasenya actual abans d’eliminar el compte.
     </string>
 
     <string name="delete_account_confirm_title">
-        Vols sol·licitar l’eliminació del compte?
+        Vols eliminar el compte?
     </string>
 
     <string name="delete_account_confirm_message">
-        T’enviarem un correu electrònic amb un enllaç segur. Obrir l’enllaç no eliminarà automàticament el compte: hauràs de confirmar l’eliminació una última vegada des de la pàgina de confirmació.
+        Aquesta acció eliminarà permanentment el teu compte i les dades associades. No es pot desfer. Introdueix la contrasenya actual per confirmar-ho.
     </string>
 
-    <string name="delete_account_send_email">
-        Enviar correu
+    <string name="delete_account_password_label">
+        Contrasenya actual
     </string>
 
-    <string name="delete_account_email_sent_title">
-        Revisa el correu
+    <string name="delete_account_confirm_button">
+        Eliminar definitivament
     </string>
 
-    <string name="delete_account_email_sent_message">
-        Hem enviat un correu de confirmació a %1$s. L’enllaç caduca en 30 minuts. El compte continuarà actiu fins que confirmis l’eliminació.
+    <string name="account_delete_password_required">
+        Introdueix la contrasenya actual per eliminar el compte.
     </string>
 
-    <string name="account_delete_email_must_be_verified">
-        Has de tenir el correu electrònic verificat abans de poder eliminar el compte.
+    <string name="account_delete_wrong_password">
+        La contrasenya no és correcta.
     </string>
 
-    <string name="account_delete_request_failed">
-        No s’ha pogut enviar el correu d’eliminació. Comprova la connexió i torna-ho a provar.
+    <string name="account_delete_failed">
+        No s’ha pogut eliminar el compte. Comprova la connexió i torna-ho a provar.
     </string>
 
 </resources>

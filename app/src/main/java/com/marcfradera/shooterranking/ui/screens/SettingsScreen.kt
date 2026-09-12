@@ -19,6 +19,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.marcfradera.shooterranking.R
@@ -45,18 +47,21 @@ fun SettingsScreen(
     email: String,
     loading: Boolean,
     error: String?,
-    deletionRequestSent: Boolean,
     onBack: () -> Unit,
     onChangeLanguage: () -> Unit,
     onLegalInformation: () -> Unit,
     onLogout: () -> Unit,
-    onRequestAccountDeletion: () -> Unit,
-    onDismissDeletionSent: () -> Unit
+    onDeleteAccount: (String) -> Unit
 ) {
 
     var showDeleteConfirmation
             by remember {
                 mutableStateOf(false)
+            }
+
+    var deletePassword
+            by remember {
+                mutableStateOf("")
             }
 
     val context =
@@ -398,8 +403,6 @@ fun SettingsScreen(
                 )
         )
 
-
-
         Surface(
             modifier =
                 Modifier.fillMaxWidth(),
@@ -497,7 +500,7 @@ fun SettingsScreen(
                     text =
                         stringResource(
                             R.string
-                                .delete_account_email_note
+                                .delete_account_password_note
                         ),
 
                     style =
@@ -520,6 +523,9 @@ fun SettingsScreen(
 
                 Button(
                     onClick = {
+                        deletePassword =
+                            ""
+
                         showDeleteConfirmation =
                             true
                     },
@@ -663,6 +669,9 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = {
                 if (!loading) {
+                    deletePassword =
+                        ""
+
                     showDeleteConfirmation =
                         false
                 }
@@ -681,35 +690,105 @@ fun SettingsScreen(
 
             text = {
 
-                Text(
-                    text =
-                        stringResource(
-                            R.string
-                                .delete_account_confirm_message
+                Column {
+
+                    Text(
+                        text =
+                            stringResource(
+                                R.string
+                                    .delete_account_confirm_message
+                            )
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.height(
+                                16.dp
+                            )
+                    )
+
+                    OutlinedTextField(
+                        value =
+                            deletePassword,
+
+                        onValueChange = {
+                                value ->
+
+                            deletePassword =
+                                value
+                        },
+
+                        enabled =
+                            !loading,
+
+                        modifier =
+                            Modifier.fillMaxWidth(),
+
+                        label = {
+                            Text(
+                                text =
+                                    stringResource(
+                                        R.string
+                                            .delete_account_password_label
+                                    )
+                            )
+                        },
+
+                        singleLine =
+                            true,
+
+                        visualTransformation =
+                            PasswordVisualTransformation()
+                    )
+
+                    if (
+                        !error.isNullOrBlank()
+                    ) {
+
+                        Spacer(
+                            modifier =
+                                Modifier.height(
+                                    10.dp
+                                )
                         )
-                )
+
+                        Text(
+                            text =
+                                error,
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodySmall,
+
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .error
+                        )
+                    }
+                }
             },
 
             confirmButton = {
 
                 TextButton(
                     onClick = {
-
-                        showDeleteConfirmation =
-                            false
-
-                        onRequestAccountDeletion()
+                        onDeleteAccount(
+                            deletePassword
+                        )
                     },
 
                     enabled =
-                        !loading
+                        !loading &&
+                                deletePassword.isNotBlank()
                 ) {
 
                     Text(
                         text =
                             stringResource(
                                 R.string
-                                    .delete_account_send_email
+                                    .delete_account_confirm_button
                             ),
 
                         color =
@@ -727,6 +806,9 @@ fun SettingsScreen(
 
                 TextButton(
                     onClick = {
+                        deletePassword =
+                            ""
+
                         showDeleteConfirmation =
                             false
                     },
@@ -739,55 +821,6 @@ fun SettingsScreen(
                         text =
                             stringResource(
                                 R.string.cancel
-                            )
-                    )
-                }
-            }
-        )
-    }
-
-    if (
-        deletionRequestSent
-    ) {
-
-        AlertDialog(
-            onDismissRequest =
-                onDismissDeletionSent,
-
-            title = {
-
-                Text(
-                    text =
-                        stringResource(
-                            R.string
-                                .delete_account_email_sent_title
-                        )
-                )
-            },
-
-            text = {
-
-                Text(
-                    text =
-                        stringResource(
-                            R.string
-                                .delete_account_email_sent_message,
-                            email
-                        )
-                )
-            },
-
-            confirmButton = {
-
-                TextButton(
-                    onClick =
-                        onDismissDeletionSent
-                ) {
-
-                    Text(
-                        text =
-                            stringResource(
-                                R.string.close
                             )
                     )
                 }
@@ -833,7 +866,7 @@ private fun SettingsOptionCard(
     description: String,
     enabled: Boolean,
     trailingContent:
-    (@Composable () -> Unit)? =
+        (@Composable () -> Unit)? =
         null,
     onClick: () -> Unit
 ) {
@@ -1006,7 +1039,7 @@ private fun SettingsLanguageFlag(
 
                 val stripeHeight =
                     size.height /
-                            9f
+                        9f
 
                 listOf(
                     1,
@@ -1014,7 +1047,7 @@ private fun SettingsLanguageFlag(
                     5,
                     7
                 ).forEach {
-                        stripe ->
+                    stripe ->
 
                     drawRect(
                         color =
@@ -1026,7 +1059,7 @@ private fun SettingsLanguageFlag(
                             Offset(
                                 0f,
                                 stripeHeight *
-                                        stripe
+                                    stripe
                             ),
 
                         size =
@@ -1076,7 +1109,7 @@ private fun SettingsLanguageFlag(
 
                     strokeWidth =
                         size.height *
-                                0.20f
+                            0.20f
                 )
 
                 drawLine(
@@ -1097,7 +1130,7 @@ private fun SettingsLanguageFlag(
 
                     strokeWidth =
                         size.height *
-                                0.20f
+                            0.20f
                 )
 
                 drawLine(
@@ -1118,7 +1151,7 @@ private fun SettingsLanguageFlag(
 
                     strokeWidth =
                         size.height *
-                                0.09f
+                            0.09f
                 )
 
                 drawLine(
@@ -1139,7 +1172,7 @@ private fun SettingsLanguageFlag(
 
                     strokeWidth =
                         size.height *
-                                0.09f
+                            0.09f
                 )
 
                 drawRect(
@@ -1149,14 +1182,14 @@ private fun SettingsLanguageFlag(
                     topLeft =
                         Offset(
                             size.width *
-                                    0.40f,
+                                0.40f,
                             0f
                         ),
 
                     size =
                         Size(
                             size.width *
-                                    0.20f,
+                                0.20f,
                             size.height
                         )
                 )
@@ -1169,14 +1202,14 @@ private fun SettingsLanguageFlag(
                         Offset(
                             0f,
                             size.height *
-                                    0.34f
+                                0.34f
                         ),
 
                     size =
                         Size(
                             size.width,
                             size.height *
-                                    0.32f
+                                0.32f
                         )
                 )
 
@@ -1187,14 +1220,14 @@ private fun SettingsLanguageFlag(
                     topLeft =
                         Offset(
                             size.width *
-                                    0.455f,
+                                0.455f,
                             0f
                         ),
 
                     size =
                         Size(
                             size.width *
-                                    0.09f,
+                                0.09f,
                             size.height
                         )
                 )
@@ -1207,14 +1240,14 @@ private fun SettingsLanguageFlag(
                         Offset(
                             0f,
                             size.height *
-                                    0.42f
+                                0.42f
                         ),
 
                     size =
                         Size(
                             size.width,
                             size.height *
-                                    0.16f
+                                0.16f
                         )
                 )
             }
@@ -1223,7 +1256,7 @@ private fun SettingsLanguageFlag(
 
                 val third =
                     size.width /
-                            3f
+                        3f
 
                 drawRect(
                     color =
@@ -1264,7 +1297,7 @@ private fun SettingsLanguageFlag(
                     topLeft =
                         Offset(
                             third *
-                                    2f,
+                                2f,
                             0f
                         ),
 
@@ -1295,14 +1328,14 @@ private fun SettingsLanguageFlag(
                         Offset(
                             0f,
                             size.height *
-                                    0.25f
+                                0.25f
                         ),
 
                     size =
                         Size(
                             size.width,
                             size.height *
-                                    0.50f
+                                0.50f
                         )
                 )
             }

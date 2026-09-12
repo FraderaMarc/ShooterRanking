@@ -23,28 +23,27 @@ class SettingsViewModel(
     var error by mutableStateOf<String?>(null)
         private set
 
-    var deletionRequestSent by mutableStateOf(false)
-        private set
-
-    fun requestAccountDeletion(language: String) {
+    fun deleteAccount(
+        password: String,
+        onDone: () -> Unit
+    ) {
         viewModelScope.launch {
             error = null
-            deletionRequestSent = false
             loading = true
 
             try {
-                repository.requestAccountDeletion(language)
-                deletionRequestSent = true
+                repository.deleteAccount(
+                    password
+                )
+
+                currentEmail = ""
+                onDone()
             } catch (e: Exception) {
                 error = e.message
             } finally {
                 loading = false
             }
         }
-    }
-
-    fun clearDeletionRequestSent() {
-        deletionRequestSent = false
     }
 
     fun signOut(onDone: () -> Unit) {

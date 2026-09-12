@@ -42,36 +42,36 @@
         Permanently delete your Shooter Ranking account and the data associated with it.
     </string>
 
-    <string name="delete_account_email_note">
-        For security, we will first send an email to your verified address. Your account will not be deleted until you confirm the request from that email.
+    <string name="delete_account_password_note">
+        For security, you must enter your current password before deleting the account.
     </string>
 
     <string name="delete_account_confirm_title">
-        Request account deletion?
+        Delete account?
     </string>
 
     <string name="delete_account_confirm_message">
-        We will send you an email containing a secure link. Opening the link will not automatically delete your account: you will have to confirm the deletion one last time on the confirmation page.
+        This will permanently delete your account and its associated data. This action cannot be undone. Enter your current password to confirm.
     </string>
 
-    <string name="delete_account_send_email">
-        Send email
+    <string name="delete_account_password_label">
+        Current password
     </string>
 
-    <string name="delete_account_email_sent_title">
-        Check your email
+    <string name="delete_account_confirm_button">
+        Delete permanently
     </string>
 
-    <string name="delete_account_email_sent_message">
-        We sent a confirmation email to %1$s. The link expires in 30 minutes. Your account will remain active until you confirm the deletion.
+    <string name="account_delete_password_required">
+        Enter your current password to delete the account.
     </string>
 
-    <string name="account_delete_email_must_be_verified">
-        Your email address must be verified before you can delete your account.
+    <string name="account_delete_wrong_password">
+        The password is incorrect.
     </string>
 
-    <string name="account_delete_request_failed">
-        We could not send the deletion email. Check your connection and try again.
+    <string name="account_delete_failed">
+        We could not delete the account. Check your connection and try again.
     </string>
 
 </resources>

@@ -42,36 +42,36 @@
         Elimina permanentemente tu cuenta de Shooter Ranking y los datos asociados a ella.
     </string>
 
-    <string name="delete_account_email_note">
-        Por seguridad, primero enviaremos un correo a tu dirección verificada. La cuenta no se eliminará hasta que confirmes la solicitud desde ese correo.
+    <string name="delete_account_password_note">
+        Por seguridad, tendrás que introducir tu contraseña actual antes de eliminar la cuenta.
     </string>
 
     <string name="delete_account_confirm_title">
-        ¿Solicitar la eliminación de la cuenta?
+        ¿Eliminar la cuenta?
     </string>
 
     <string name="delete_account_confirm_message">
-        Te enviaremos un correo electrónico con un enlace seguro. Abrir el enlace no eliminará automáticamente la cuenta: tendrás que confirmar la eliminación una última vez desde la página de confirmación.
+        Esta acción eliminará permanentemente tu cuenta y los datos asociados. No se puede deshacer. Introduce tu contraseña actual para confirmar.
     </string>
 
-    <string name="delete_account_send_email">
-        Enviar correo
+    <string name="delete_account_password_label">
+        Contraseña actual
     </string>
 
-    <string name="delete_account_email_sent_title">
-        Revisa tu correo
+    <string name="delete_account_confirm_button">
+        Eliminar definitivamente
     </string>
 
-    <string name="delete_account_email_sent_message">
-        Hemos enviado un correo de confirmación a %1$s. El enlace caduca en 30 minutos. Tu cuenta seguirá activa hasta que confirmes la eliminación.
+    <string name="account_delete_password_required">
+        Introduce tu contraseña actual para eliminar la cuenta.
     </string>
 
-    <string name="account_delete_email_must_be_verified">
-        Debes tener el correo electrónico verificado antes de poder eliminar la cuenta.
+    <string name="account_delete_wrong_password">
+        La contraseña no es correcta.
     </string>
 
-    <string name="account_delete_request_failed">
-        No se ha podido enviar el correo de eliminación. Comprueba tu conexión e inténtalo de nuevo.
+    <string name="account_delete_failed">
+        No se ha podido eliminar la cuenta. Comprueba tu conexión e inténtalo de nuevo.
     </string>
 
 </resources>

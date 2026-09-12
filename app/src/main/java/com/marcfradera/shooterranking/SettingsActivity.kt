@@ -7,7 +7,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.marcfradera.shooterranking.data.FirebaseProvider
 import com.marcfradera.shooterranking.legal.LegalDocuments
-import com.marcfradera.shooterranking.localization.AppLanguageManager
 import com.marcfradera.shooterranking.localization.AppSettingsDialogs
 import com.marcfradera.shooterranking.ui.screens.SettingsScreen
 import com.marcfradera.shooterranking.ui.theme.ShooterRankingTheme
@@ -40,10 +39,6 @@ class SettingsActivity : AppCompatActivity() {
                     error =
                         settingsViewModel.error,
 
-                    deletionRequestSent =
-                        settingsViewModel
-                            .deletionRequestSent,
-
                     onBack = {
                         finish()
                     },
@@ -68,19 +63,16 @@ class SettingsActivity : AppCompatActivity() {
                         }
                     },
 
-                    onRequestAccountDeletion = {
-                        settingsViewModel
-                            .requestAccountDeletion(
-                                AppLanguageManager
-                                    .currentLanguageTag(
-                                        this@SettingsActivity
-                                    )
-                            )
-                    },
+                    onDeleteAccount = {
+                            password ->
 
-                    onDismissDeletionSent = {
                         settingsViewModel
-                            .clearDeletionRequestSent()
+                            .deleteAccount(
+                                password = password,
+                                onDone = {
+                                    restartToMain()
+                                }
+                            )
                     }
                 )
             }

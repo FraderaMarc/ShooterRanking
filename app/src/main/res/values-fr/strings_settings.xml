@@ -42,36 +42,36 @@
         Supprime définitivement votre compte Shooter Ranking et les données qui lui sont associées.
     </string>
 
-    <string name="delete_account_email_note">
-        Pour des raisons de sécurité, nous enverrons d’abord un e-mail à votre adresse vérifiée. Le compte ne sera pas supprimé tant que vous n’aurez pas confirmé la demande depuis cet e-mail.
+    <string name="delete_account_password_note">
+        Pour des raisons de sécurité, vous devez saisir votre mot de passe actuel avant de supprimer le compte.
     </string>
 
     <string name="delete_account_confirm_title">
-        Demander la suppression du compte ?
+        Supprimer le compte ?
     </string>
 
     <string name="delete_account_confirm_message">
-        Nous vous enverrons un e-mail contenant un lien sécurisé. L’ouverture du lien ne supprimera pas automatiquement votre compte : vous devrez confirmer une dernière fois la suppression sur la page de confirmation.
+        Cette action supprimera définitivement votre compte et les données associées. Elle est irréversible. Saisissez votre mot de passe actuel pour confirmer.
     </string>
 
-    <string name="delete_account_send_email">
-        Envoyer l’e-mail
+    <string name="delete_account_password_label">
+        Mot de passe actuel
     </string>
 
-    <string name="delete_account_email_sent_title">
-        Consultez votre e-mail
+    <string name="delete_account_confirm_button">
+        Supprimer définitivement
     </string>
 
-    <string name="delete_account_email_sent_message">
-        Nous avons envoyé un e-mail de confirmation à %1$s. Le lien expire dans 30 minutes. Votre compte restera actif jusqu’à la confirmation de la suppression.
+    <string name="account_delete_password_required">
+        Saisissez votre mot de passe actuel pour supprimer le compte.
     </string>
 
-    <string name="account_delete_email_must_be_verified">
-        Votre adresse e-mail doit être vérifiée avant de pouvoir supprimer votre compte.
+    <string name="account_delete_wrong_password">
+        Le mot de passe est incorrect.
     </string>
 
-    <string name="account_delete_request_failed">
-        Impossible d’envoyer l’e-mail de suppression. Vérifiez votre connexion et réessayez.
+    <string name="account_delete_failed">
+        Impossible de supprimer le compte. Vérifiez votre connexion et réessayez.
     </string>
 
 </resources>

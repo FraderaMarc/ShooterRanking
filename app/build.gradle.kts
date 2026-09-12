@@ -22,8 +22,28 @@ android {
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["admobAppId"] =
+                "ca-app-pub-3513978132685052~6980372084"
+
+            resValue(
+                "string",
+                "admob_banner_id",
+                "ca-app-pub-3940256099942544/9214589741"
+            )
+        }
+
         release {
             isMinifyEnabled = false
+
+            manifestPlaceholders["admobAppId"] =
+                "ca-app-pub-3513978132685052~6980372084"
+
+            resValue(
+                "string",
+                "admob_banner_id",
+                "ca-app-pub-3513978132685052/2962457218"
+            )
 
             proguardFiles(
                 getDefaultProguardFile(

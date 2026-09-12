@@ -18,6 +18,10 @@
         Consulta la política de privacitat i els termes i condicions.
     </string>
 
+    <string name="ad_privacy_options">
+        Privacitat dels anuncis
+    </string>
+
     <string name="settings_account_section">
         Compte
     </string>

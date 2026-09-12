@@ -18,6 +18,10 @@
         Consulter la politique de confidentialité et les conditions générales.
     </string>
 
+    <string name="ad_privacy_options">
+        Confidentialité des annonces
+    </string>
+
     <string name="settings_account_section">
         Compte
     </string>

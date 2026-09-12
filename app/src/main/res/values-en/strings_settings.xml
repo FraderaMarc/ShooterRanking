@@ -18,6 +18,10 @@
         Review the privacy policy and terms and conditions.
     </string>
 
+    <string name="ad_privacy_options">
+        Ad privacy
+    </string>
+
     <string name="settings_account_section">
         Account
     </string>

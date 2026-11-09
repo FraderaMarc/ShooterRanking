@@ -1,3 +1,4 @@
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -34,7 +35,11 @@ android {
         }
 
         release {
-            isMinifyEnabled = false
+            // Activar optimización y ofuscación R8
+            isMinifyEnabled = true
+
+            // No eliminar recursos gráficos ni XML
+            isShrinkResources = false
 
             manifestPlaceholders["admobAppId"] =
                 "ca-app-pub-3513978132685052~6980372084"
